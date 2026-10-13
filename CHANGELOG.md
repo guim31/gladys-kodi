@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-13
+
 ### Changed
 
 - Quieter logs: playback events are only written at the debug level, and a Kodi
@@ -43,5 +45,6 @@ the notes of the version's GitHub Release.
   needs attention (no answer, password refused, artwork unavailable).
 - English, French, German and Spanish texts and documentation.
 
-[Unreleased]: https://github.com/guim31/gladys-kodi/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/guim31/gladys-kodi/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/guim31/gladys-kodi/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/guim31/gladys-kodi/releases/tag/v1.0.0

@@ -1,6 +1,6 @@
 {
   "name": "gladys-kodi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Kodi integration for Gladys Assistant: follow and control what Kodi plays.",
   "type": "module",
