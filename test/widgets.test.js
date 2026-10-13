@@ -1,77 +1,188 @@
+// -----------------------------------------------------------------------------
+// The "Kodi" widget: content checked against the SDK's validator (what the
+// core renders exactly as sent), its artwork, its buttons.
+// -----------------------------------------------------------------------------
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateWidgetContent } from '@gladysassistant/integration-sdk';
-import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
-import { buildDiscoveredDevices } from '../src/devices/index.js';
-import { simulateLanSession } from '../src/devices/plug.js';
-import { DEMO_STATUS_WIDGET, WIDGETS, refreshWidgets } from '../src/widgets.js';
-import { normalizeConfig } from '../src/config.js';
+import { validateWidgetContent, validateWidgetImage } from '@gladysassistant/integration-sdk';
+import { buildContent } from '../src/widgets.js';
+import { COVER, FakeKodi, HA_ITEMS, result, settle, until } from './helpers/fakeKodi.js';
+import { createWorld, created, deviceId } from './helpers/world.js';
 
-const gladys = createFakeGladys();
-const config = normalizeConfig();
-const demoStatus = WIDGETS[DEMO_STATUS_WIDGET];
+const get = async (gladys, settings, language = 'fr') => {
+  const ack = await gladys.fake.widgetGet('player', { settings, language, units: 'metric' });
+  assert.equal(ack.success, true, ack.error);
+  return ack.data.content ?? ack.data;
+};
+const types = (content) => content.components.map((c) => c.type);
+const labels = (content) =>
+  content.components.filter((c) => c.type === 'button').map((c) => c.action.key);
 
-// What the SDK passes to onWidgetGet, plus the config index.js adds.
-const getContent = (cfg = config) =>
-  demoStatus.get(gladys, { settings: {}, language: 'en', units: 'metric', config: cfg });
+async function world() {
+  const w = await createWorld();
+  await until(() => w.hub.instances.get(1)?.kodi.known, 2000, 'first read');
+  return w;
+}
 
-test('the demo_status content is rendered exactly as sent', async () => {
-  // [] = nothing the core would drop, truncate or trim to the content budget.
-  assert.deepEqual(validateWidgetContent(await getContent()), []);
+test('nothing chosen, unknown Kodi: a short text', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  const empty = await get(w.gladys, {});
+  assert.match(empty.components[0].text, /Choisissez un Kodi/);
+  const unknown = await get(w.gladys, { device: 'ext:test-integration:kodi:9' }, 'de');
+  assert.match(unknown.components[0].text, /nicht mehr eingerichtet/);
 });
 
-test('the degraded plug connection content is valid too', async () => {
-  simulateLanSession(false);
-  try {
-    const content = await getContent();
-    assert.deepEqual(validateWidgetContent(content), []);
-    const status = content.components.find((component) => component.type === 'status');
-    assert.ok(
-      status.items.some((item) => item.color === 'warning'),
-      'degraded shows a warning',
-    );
-  } finally {
-    simulateLanSession(true);
-  }
+test('stopped: title, state, volume buttons; every content fits the core budget', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  const content = await get(w.gladys, { device: deviceId(1) });
+  assert.deepEqual(types(content), ['text', 'text', 'status', 'button', 'button']);
+  assert.equal(content.components[0].text, 'Rien en lecture');
+  assert.deepEqual(labels(content), ['volume_down', 'volume_up']);
+  assert.deepEqual(validateWidgetContent(content), []);
 });
 
-test('the live tiles reference features the integration publishes', async () => {
-  const featureIds = new Set(
-    buildDiscoveredDevices(gladys, config).flatMap((device) =>
-      device.features.map((feature) => feature.external_id),
-    ),
+test('a library song: artwork from Kodi, next and volume buttons', async (t) => {
+  const kodi = new FakeKodi();
+  kodi.images.set('image://%2fmedia%2fmusic%2fTest%20Artist%2fTest%20Album%2ffolder.jpg/', COVER);
+  const w = await createWorld({ kodis: [kodi] });
+  t.after(() => w.app.stop());
+  kodi.playSong();
+  await until(() => w.hub.artworkKey(w.hub.instances.get(1)), 2000, 'artwork');
+  const content = await get(w.gladys, { device: deviceId(1) }, 'en');
+  assert.deepEqual(types(content), [
+    'image',
+    'text',
+    'text',
+    'status',
+    'button',
+    'button',
+    'button',
+    'button',
+  ]);
+  assert.equal(content.components[1].text, 'Test Artist – Test Song');
+  assert.equal(content.components[2].text, 'Music · Kodi Test');
+  assert.deepEqual(labels(content), ['play_pause', 'next', 'volume_down', 'volume_up']);
+  assert.deepEqual(validateWidgetContent(content), []);
+  const image = await w.gladys.fake.widgetGetImage(content.components[0].key);
+  assert.equal(image.success, true);
+  const base64 = image.data.image ?? image.data;
+  assert.ok(Buffer.from(base64, 'base64').equals(COVER));
+  assert.deepEqual(validateWidgetImage(base64), []);
+  assert.equal((await w.gladys.fake.widgetGetImage('cover-unknown')).success, false);
+});
+
+test('a file outside the library, device added: the progress gauge, stop button', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  await w.gladys.fake.deviceCreated(created(w.gladys));
+  w.kodi.playVideoFile();
+  await until(() => w.hub.instances.get(1).kodi.snapshot.state === 'playing', 2000, 'playing');
+  const content = await get(w.gladys, { device: deviceId(1) });
+  assert.deepEqual(types(content), [
+    'gauge',
+    'text',
+    'text',
+    'status',
+    'button',
+    'button',
+    'button',
+    'button',
+  ]);
+  assert.deepEqual(labels(content), ['play_pause', 'stop', 'volume_down', 'volume_up']);
+  const status = content.components.find((c) => c.type === 'status').items;
+  assert.deepEqual(
+    status.map((item) => item.label),
+    ['État', 'Position', 'Fin vers', 'Volume'],
   );
-  const liveTiles = (await getContent()).components.filter((c) => c.device_feature);
-  assert.ok(liveTiles.length > 0, 'the template demonstrates a device-bound tile');
-  for (const tile of liveTiles) {
-    assert.ok(featureIds.has(tile.device_feature), `unknown feature ${tile.device_feature}`);
+  assert.equal(status[1].value, '0:02 / 10:00');
+  assert.equal(content.ttl_seconds, 15);
+  assert.deepEqual(validateWidgetContent(content), []);
+});
+
+test('a long title is cut in the heading and given whole in the caption', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  w.kodi.playItem({ ...HA_ITEMS.episode, showtitle: 'A very long show title indeed' });
+  await until(() => w.hub.instances.get(1).kodi.snapshot.state === 'playing', 2000, 'playing');
+  const content = await get(w.gladys, { device: deviceId(1) });
+  assert.equal(content.components[0].text.length, 40);
+  assert.match(content.components[1].text, /S03E07 – Episode title · Épisode · Kodi Test/);
+  assert.deepEqual(validateWidgetContent(content), []);
+});
+
+test('buttons: play/pause, stop, volume steps; a refusal is a toast, not an error', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  const settings = { device: deviceId(1) };
+  const act = (key) => w.gladys.fake.widgetAction('player', key, {}, { settings });
+  const refused = await act('play_pause');
+  assert.equal(refused.success, true);
+  assert.match(JSON.stringify(refused.data), /Nothing is playing on Kodi/);
+  w.kodi.playVideoFile();
+  await until(() => w.hub.instances.get(1).kodi.snapshot.state === 'playing', 2000, 'playing');
+  await act('play_pause');
+  await until(() => w.hub.instances.get(1).kodi.snapshot.state === 'paused', 2000, 'paused');
+  await act('volume_down');
+  assert.equal(w.kodi.application.volume, 95);
+  await until(() => w.hub.instances.get(1).kodi.snapshot.volume === 95, 2000, 'volume');
+  await act('volume_up');
+  assert.equal(w.kodi.application.volume, 100);
+  await act('stop');
+  assert.equal(w.kodi.player, null);
+  assert.equal((await act('nope')).success, false);
+});
+
+test('the dashboards are nudged when playback changes, within the core limit', async (t) => {
+  let clock = 0;
+  const w = await createWorld({ now: () => clock });
+  t.after(() => w.app.stop());
+  await until(() => w.hub.instances.get(1)?.kodi.known, 2000, 'first read');
+  const before = w.gladys.fake.widgetRefreshes.length;
+  clock += 20_000;
+  w.kodi.playVideoFile();
+  await until(() => w.gladys.fake.widgetRefreshes.length > before, 2000, 'nudge');
+  assert.deepEqual(w.gladys.fake.widgetRefreshes.at(-1), 'player');
+  await settle();
+});
+
+test('buildContent stays within the budget in every state and language', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  const entry = w.hub.instances.get(1);
+  const base = entry.kodi.snapshot;
+  const states = [
+    { ...base, state: 'off', volume: null },
+    { ...base, state: 'stopped' },
+    {
+      ...base,
+      state: 'paused',
+      title: 'x'.repeat(300),
+      mediaType: 'movie',
+      time: 10,
+      total: 7200,
+      percentage: 0.1,
+      identity: 'movie:1',
+    },
+    {
+      ...base,
+      state: 'playing',
+      title: 'Live',
+      mediaType: 'tv',
+      time: 10,
+      total: null,
+      identity: 'channel:4',
+    },
+  ];
+  for (const snapshot of states) {
+    entry.kodi.snapshot = snapshot;
+    for (const language of ['en', 'fr', 'de', 'es', 'it']) {
+      const content = buildContent(w.hub, { settings: { device: deviceId(1) }, language });
+      assert.deepEqual(validateWidgetContent(content), [], `${snapshot.state} ${language}`);
+    }
   }
-});
-
-test('every button action of the content is handled and answers a short toast', async () => {
-  const buttons = (await getContent()).components.filter((c) => c.type === 'button' && c.action);
-  assert.ok(buttons.length > 0, 'the template demonstrates a widget action');
-  for (const { action } of buttons) {
-    const message = await demoStatus.action(gladys, {
-      actionKey: action.key,
-      params: action.params ?? {},
-      settings: {},
-      config,
-    });
-    assert.ok(message.en, 'the toast carries at least the mandatory `en` text');
-    assert.ok(message.en.length <= 200, 'toasts are capped at 200 characters');
-  }
-});
-
-test('an unknown widget action fails, so the user sees the error', async () => {
-  await assert.rejects(
-    demoStatus.action(gladys, { actionKey: 'unknown', params: {}, settings: {}, config }),
-    /Unknown widget action/,
-  );
-});
-
-test('refreshWidgets nudges every widget', () => {
-  const fresh = createFakeGladys();
-  refreshWidgets(fresh);
-  assert.deepEqual(fresh.fake.widgetRefreshes, Object.keys(WIDGETS));
+  entry.kodi.snapshot = base;
+  assert.ok(result('active-players-none.json'));
 });

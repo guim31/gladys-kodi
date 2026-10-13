@@ -1,0 +1,64 @@
+{
+  "movie": {
+    "album": "",
+    "artist": [],
+    "episode": -1,
+    "file": "/media/movies/Movie (2026)/Movie.2026.2160p.mkv",
+    "id": 1,
+    "label": "Movie title",
+    "season": -1,
+    "showtitle": "",
+    "thumbnail": "",
+    "title": "Movie title",
+    "type": "movie",
+    "year": 2026,
+    "art": {
+      "poster": "image://https%3a%2f%2fimage.example.com%2fposter.jpg/",
+      "fanart": "image://https%3a%2f%2fimage.example.com%2ffanart.jpg/"
+    }
+  },
+  "episode": {
+    "album": "",
+    "artist": [],
+    "episode": 7,
+    "file": "/media/tv/Show title/s03/Show.title.S03E07.2160p.mkv",
+    "id": 2,
+    "label": "Episode title",
+    "season": 3,
+    "showtitle": "Show title",
+    "thumbnail": "image://https%3a%2f%2fimage.example.com%2fepisode.jpg/",
+    "title": "Episode title",
+    "type": "episode",
+    "art": {
+      "thumb": "image://https%3a%2f%2fimage.example.com%2fepisode.jpg/",
+      "tvshow.poster": "image://https%3a%2f%2fimage.example.com%2fshow-poster.jpg/"
+    }
+  },
+  "channel": {
+    "id": 4,
+    "label": "Channel name",
+    "thumbnail": "image://pvrchannel_tv@http%3a%2f%2fpvr.example.com%2fimagecache%2f80/",
+    "title": "Current programme",
+    "type": "channel",
+    "channel": "Channel name",
+    "channeltype": "tv",
+    "art": {
+      "thumb": "image://pvrchannel_tv@http%3a%2f%2fpvr.example.com%2fimagecache%2f80/"
+    }
+  },
+  "song": {
+    "album": "Album",
+    "albumartist": ["Album artist", "Other album artist"],
+    "artist": ["Artist", "Featured artist"],
+    "file": "/media/music/Artist/Album/01 - Song title.flac",
+    "id": 3,
+    "label": "Song title",
+    "thumbnail": "image://music@%2fmedia%2fmusic%2fArtist%2fAlbum%2f01%20-%20Song%20title.flac/",
+    "title": "Song title",
+    "type": "song",
+    "art": {
+      "thumb": "image://music@%2fmedia%2fmusic%2fArtist%2fAlbum%2f01%20-%20Song%20title.flac/",
+      "album.thumb": "image://%2fmedia%2fmusic%2fArtist%2fAlbum%2ffolder.jpg/"
+    }
+  }
+}

@@ -1,0 +1,551 @@
+[
+  {
+    "t": 60,
+    "frame": {
+      "id": 6,
+      "jsonrpc": "2.0",
+      "result": "OK"
+    }
+  },
+  {
+    "t": 84,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Playlist.OnAdd",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "playlistid": 1,
+          "position": 0
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 113,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnAVChange",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "player": {
+            "playerid": 1,
+            "speed": 1
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 122,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnAVChange",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "player": {
+            "playerid": 1,
+            "speed": 1
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 192,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnPlay",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "player": {
+            "playerid": 1,
+            "speed": 1
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 335,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnAVChange",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "player": {
+            "playerid": 1,
+            "speed": 1
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 336,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnAVStart",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "player": {
+            "playerid": 1,
+            "speed": 1
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 591,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnAVChange",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "player": {
+            "playerid": 1,
+            "speed": 1
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 3104,
+    "frame": {
+      "id": 10,
+      "jsonrpc": "2.0",
+      "result": {
+        "speed": 0
+      }
+    }
+  },
+  {
+    "t": 3106,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnPause",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "player": {
+            "playerid": 1,
+            "speed": 0
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 4124,
+    "frame": {
+      "id": 12,
+      "jsonrpc": "2.0",
+      "result": {
+        "speed": 1
+      }
+    }
+  },
+  {
+    "t": 4129,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnResume",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "player": {
+            "playerid": 1,
+            "speed": 1
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 5104,
+    "frame": {
+      "id": 13,
+      "jsonrpc": "2.0",
+      "result": 40
+    }
+  },
+  {
+    "t": 5105,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Application.OnVolumeChanged",
+      "params": {
+        "data": {
+          "muted": false,
+          "volume": 40
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 5622,
+    "frame": {
+      "id": 14,
+      "jsonrpc": "2.0",
+      "result": true
+    }
+  },
+  {
+    "t": 5623,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Application.OnVolumeChanged",
+      "params": {
+        "data": {
+          "muted": true,
+          "volume": 40
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 6125,
+    "frame": {
+      "id": 15,
+      "jsonrpc": "2.0",
+      "result": false
+    }
+  },
+  {
+    "t": 6126,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Application.OnVolumeChanged",
+      "params": {
+        "data": {
+          "muted": false,
+          "volume": 40
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 6765,
+    "frame": {
+      "id": 16,
+      "jsonrpc": "2.0",
+      "result": {
+        "percentage": 50,
+        "time": {
+          "hours": 0,
+          "milliseconds": 0,
+          "minutes": 5,
+          "seconds": 0
+        },
+        "totaltime": {
+          "hours": 0,
+          "milliseconds": 0,
+          "minutes": 10,
+          "seconds": 0
+        }
+      }
+    }
+  },
+  {
+    "t": 6769,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnSeek",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "player": {
+            "playerid": 1,
+            "seekoffset": {
+              "hours": 0,
+              "milliseconds": 960,
+              "minutes": 4,
+              "seconds": 54
+            },
+            "speed": 1,
+            "time": {
+              "hours": 0,
+              "milliseconds": 0,
+              "minutes": 5,
+              "seconds": 0
+            }
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 6782,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnAVChange",
+      "params": {
+        "data": {
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          },
+          "player": {
+            "playerid": 1,
+            "speed": 1
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 7607,
+    "frame": {
+      "id": 17,
+      "jsonrpc": "2.0",
+      "result": "OK"
+    }
+  },
+  {
+    "t": 7890,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "VideoLibrary.OnUpdate",
+      "params": {
+        "data": {
+          "id": -1,
+          "type": ""
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 7935,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnStop",
+      "params": {
+        "data": {
+          "end": false,
+          "item": {
+            "title": "Big Test Movie (2024).mp4",
+            "type": "movie"
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 9611,
+    "frame": {
+      "id": 18,
+      "jsonrpc": "2.0",
+      "result": "OK"
+    }
+  },
+  {
+    "t": 9642,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Playlist.OnClear",
+      "params": {
+        "data": {
+          "playlistid": 0
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 9642,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Playlist.OnAdd",
+      "params": {
+        "data": {
+          "item": {
+            "id": 1,
+            "type": "song"
+          },
+          "playlistid": 0,
+          "position": 0
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 9683,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnPlay",
+      "params": {
+        "data": {
+          "item": {
+            "id": 1,
+            "type": "song"
+          },
+          "player": {
+            "playerid": 0,
+            "speed": 1
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 9746,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnAVStart",
+      "params": {
+        "data": {
+          "item": {
+            "id": 1,
+            "type": "song"
+          },
+          "player": {
+            "playerid": 0,
+            "speed": 1
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 12622,
+    "frame": {
+      "id": 22,
+      "jsonrpc": "2.0",
+      "result": {
+        "percentage": 0.8052206039428711,
+        "time": {
+          "hours": 0,
+          "milliseconds": 416,
+          "minutes": 0,
+          "seconds": 2
+        },
+        "totaltime": {
+          "hours": 0,
+          "milliseconds": 42,
+          "minutes": 5,
+          "seconds": 0
+        }
+      }
+    }
+  },
+  {
+    "t": 12622,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnSeek",
+      "params": {
+        "data": {
+          "item": {
+            "id": 1,
+            "type": "song"
+          },
+          "player": {
+            "playerid": 0,
+            "seekoffset": {
+              "hours": 0,
+              "milliseconds": 625,
+              "minutes": 4,
+              "seconds": 54
+            },
+            "speed": 1,
+            "time": {
+              "hours": 0,
+              "milliseconds": 41,
+              "minutes": 4,
+              "seconds": 57
+            }
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 16102,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "Player.OnStop",
+      "params": {
+        "data": {
+          "end": true,
+          "item": {
+            "id": 1,
+            "type": "song"
+          }
+        },
+        "sender": "xbmc"
+      }
+    }
+  },
+  {
+    "t": 16108,
+    "frame": {
+      "jsonrpc": "2.0",
+      "method": "AudioLibrary.OnUpdate",
+      "params": {
+        "data": {
+          "id": 1,
+          "type": "song"
+        },
+        "sender": "xbmc"
+      }
+    }
+  }
+]

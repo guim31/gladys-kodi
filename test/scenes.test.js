@@ -1,93 +1,142 @@
+// -----------------------------------------------------------------------------
+// Scene actions, as the core runs them (resolved fields, outputs).
+// -----------------------------------------------------------------------------
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
-import { createFakeGladys } from '@gladysassistant/integration-sdk/testing';
-import { DEVICE_BLUEPRINTS } from '../src/devices/index.js';
-import { MOTION_DETECTED_TRIGGER, motionSensor } from '../src/devices/motionSensor.js';
-import { SCENE_ACTIONS } from '../src/scenes.js';
-import { normalizeConfig } from '../src/config.js';
+import { FakeKodi, until } from './helpers/fakeKodi.js';
+import { createWorld, deviceId } from './helpers/world.js';
 
-const manifest = JSON.parse(
-  await readFile(new URL('../gladys-assistant-integration.json', import.meta.url), 'utf8'),
-);
-const config = normalizeConfig();
+async function world(options) {
+  const w = await createWorld(options);
+  await until(() => w.hub.instances.get(1)?.kodi.known, 2000, 'first read');
+  const run = (key, fields) => w.gladys.fake.sceneAction(key, { device: deviceId(1), ...fields });
+  return { ...w, run };
+}
 
-const declarationOf = (list, key) => manifest[list].find((entry) => entry.key === key);
-const keysOf = (list) => (list ?? []).map((entry) => entry.key);
-const deviceIdOf = (gladys, key) =>
-  DEVICE_BLUEPRINTS.find((bp) => bp.key === key).deviceExternalId(gladys);
+const outputs = (ack) => ack.data?.outputs ?? ack.data;
 
-// Let the async interval callback run to completion.
-const flush = () => new Promise((resolve) => setImmediate(resolve));
-
-test('the motion sensor fires one motion_detected event per detection, none on the clear', async (t) => {
-  t.mock.timers.enable({ apis: ['setInterval', 'setTimeout'] });
-  const gladys = createFakeGladys();
-  const stopPush = motionSensor.startPush(gladys, config);
-  try {
-    t.mock.timers.tick(60_000);
-    await flush();
-    assert.equal(gladys.fake.sceneEvents.length, 1, 'one detection, one event');
-    assert.equal(gladys.fake.sceneEvents[0].key, MOTION_DETECTED_TRIGGER);
-    assert.equal(gladys.fake.states.at(-1).state, 1, 'the state is still published');
-
-    t.mock.timers.tick(10_000);
-    await flush();
-    assert.equal(gladys.fake.states.at(-1).state, 0, 'the detection is cleared');
-    assert.equal(gladys.fake.sceneEvents.length, 1, 'the clear fires no event');
-  } finally {
-    stopPush();
-  }
+test('control_playback: applied when something plays, not when nothing does', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  assert.deepEqual(outputs(await w.run('control_playback', { command: 'pause' })), {
+    applied: false,
+  });
+  w.kodi.playVideoFile();
+  await until(() => w.hub.instances.get(1).kodi.snapshot.state === 'playing', 2000, 'playing');
+  assert.deepEqual(outputs(await w.run('control_playback', { command: 'pause' })), {
+    applied: true,
+  });
+  assert.equal(w.kodi.player.properties.speed, 0);
+  await w.run('control_playback', { command: 'play_pause' });
+  assert.equal(w.kodi.player.properties.speed, 1);
+  await w.run('control_playback', { command: 'previous' });
+  assert.deepEqual(w.kodi.calls.findLast((c) => c.method === 'Player.GoTo').params, {
+    playerid: 1,
+    to: 'previous',
+  });
+  await w.run('control_playback', { command: 'stop' });
+  assert.equal(w.kodi.player, null);
+  assert.equal((await w.run('control_playback', { command: 'rewind' })).success, false);
 });
 
-test('motion_detected data only carries keys the trigger declares', async (t) => {
-  t.mock.timers.enable({ apis: ['setInterval', 'setTimeout'] });
-  const gladys = createFakeGladys();
-  const stopPush = motionSensor.startPush(gladys, config);
-  try {
-    t.mock.timers.tick(60_000);
-    await flush();
-  } finally {
-    stopPush();
-  }
-  const [{ data }] = gladys.fake.sceneEvents;
-  const trigger = declarationOf('scene_triggers', MOTION_DETECTED_TRIGGER);
-  // The core keeps the `fields` keys (filters) and the `variables` keys
-  // (exposed to the scene): any other key would be silently dropped.
-  const declared = [...keysOf(trigger.fields), ...keysOf(trigger.variables)];
-  for (const [key, value] of Object.entries(data)) {
-    assert.ok(declared.includes(key), `data.${key} is not declared, the core would drop it`);
-    assert.ok(value === null || typeof value !== 'object', `data.${key} must be a primitive`);
-  }
-  // A `"source": "devices"` filter stores a device external_id.
-  assert.equal(data.device, deviceIdOf(gladys, 'motion-sensor'));
-  const targets = trigger.fields.find((field) => field.key === 'target').options;
-  assert.ok(
-    targets.some((option) => option.value === data.target),
-    `data.target "${data.target}" must be one of the filter options`,
+test('set_volume and set_mute', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  assert.deepEqual(outputs(await w.run('set_volume', { volume: 25 })), { volume: 25 });
+  assert.equal(w.kodi.application.volume, 25);
+  assert.deepEqual(outputs(await w.run('set_volume', { volume: '12,6' })), { volume: 13 });
+  const tooLoud = await w.run('set_volume', { volume: 101 });
+  assert.equal(tooLoud.success, false);
+  assert.equal(tooLoud.error, 'Le volume va de 0 à 100.');
+  assert.deepEqual(outputs(await w.run('set_mute', { mode: 'mute' })), { muted: true });
+  assert.deepEqual(outputs(await w.run('set_mute', { mode: 'mute' })), { muted: true });
+  assert.deepEqual(outputs(await w.run('set_mute', { mode: 'toggle' })), { muted: false });
+  assert.deepEqual(outputs(await w.run('set_mute', { mode: 'unmute' })), { muted: false });
+});
+
+test('show_notification: Kodi shows the message, an empty one is refused', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  assert.equal(
+    (
+      await w.run('show_notification', {
+        message: 'Someone at the door',
+        title: 'Doorbell',
+        duration: 8,
+      })
+    ).success,
+    true,
   );
+  assert.deepEqual(w.kodi.notifications.at(-1), {
+    title: 'Doorbell',
+    message: 'Someone at the door',
+    image: 'info',
+    displaytime: 8000,
+  });
+  await w.run('show_notification', { message: 'Hi', duration: 600 });
+  assert.deepEqual(w.kodi.notifications.at(-1), {
+    title: 'Gladys',
+    message: 'Hi',
+    image: 'info',
+    displaytime: 60000,
+  });
+  const empty = await w.run('show_notification', { message: '  ' });
+  assert.equal(empty.success, false);
+  assert.equal(empty.error, "La notification n'a pas de texte.");
 });
 
-test('identify_device signals the chosen device and returns the declared outputs', async () => {
-  const gladys = createFakeGladys();
-  const outputs = await SCENE_ACTIONS.identify_device(gladys, {
-    fields: { device: deviceIdOf(gladys, 'light') },
-    config,
+test('play_media, scan_library', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  assert.equal((await w.run('play_media', { target: 'smb://nas/films/Film.mkv' })).success, true);
+  assert.deepEqual(w.kodi.calls.find((c) => c.method === 'Player.Open').params, {
+    item: { file: 'smb://nas/films/Film.mkv' },
   });
-  assert.deepEqual(outputs, { signalled: true });
-  const declared = keysOf(declarationOf('scene_actions', 'identify_device').outputs);
-  for (const key of Object.keys(outputs)) {
-    assert.ok(declared.includes(key), `output "${key}" is not declared, the core would drop it`);
-  }
+  // The playback that follows is a real start of Kodi: the trigger fires.
+  await until(() => w.gladys.fake.sceneEvents.length === 1, 2000, 'trigger');
+  assert.equal((await w.run('play_media', { target: '' })).success, false);
+  const scans = () => w.kodi.calls.filter((c) => c.method.endsWith('Library.Scan'));
+  await w.run('scan_library', { library: 'audio' });
+  assert.equal(scans().at(-1).method, 'AudioLibrary.Scan');
+  await w.run('scan_library', {});
+  assert.equal(scans().at(-1).method, 'VideoLibrary.Scan');
 });
 
-test('identify_device reports a device that cannot signal itself through its output', async () => {
-  // Not a failure: a scene action is never a condition, the scene author
-  // gates the following actions on the output instead.
-  const gladys = createFakeGladys();
-  const outputs = await SCENE_ACTIONS.identify_device(gladys, {
-    fields: { device: deviceIdOf(gladys, 'weather-station') },
-    config,
+test('get_status: what plays, for the next steps of the scene', async (t) => {
+  const w = await world();
+  t.after(() => w.app.stop());
+  assert.deepEqual(outputs(await w.run('get_status', {})), {
+    state: 'stopped',
+    title: '',
+    media_type: '',
+    progress: 0,
+    minutes_left: 0,
+    volume: 100,
+    muted: false,
   });
-  assert.deepEqual(outputs, { signalled: false });
+  w.kodi.playSong();
+  assert.deepEqual(outputs(await w.run('get_status', {})), {
+    state: 'playing',
+    title: 'Test Artist – Test Song',
+    media_type: 'music',
+    progress: 0,
+    minutes_left: 5,
+    volume: 100,
+    muted: false,
+  });
+});
+
+test('an unknown device, a Kodi turned off: the action fails with a clear message', async (t) => {
+  const kodi = new FakeKodi({ websocket: false });
+  const w = await world({ kodis: [kodi] });
+  t.after(() => w.app.stop());
+  const unknown = await w.gladys.fake.sceneAction('set_volume', {
+    device: 'ext:test-integration:kodi:7',
+    volume: 10,
+  });
+  assert.equal(unknown.error, "Ce Kodi n'est plus configuré dans l'intégration.");
+  kodi.down = true;
+  const off = await w.run('set_volume', { volume: 10 });
+  assert.equal(off.error, 'Kodi ne répond pas.');
 });

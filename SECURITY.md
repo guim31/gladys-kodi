@@ -30,6 +30,22 @@ Gladys before reporting a problem.
 
 In scope: the code of this repository and the Docker image it publishes.
 
+What the integration holds:
+
+- the user names and passwords of Kodi's web server, in the Gladys
+  configuration (the passwords in `secret` fields, never sent back to the
+  browser by Gladys) — never in `/data`, never in the logs;
+- `/data/kodi-state.json`: the name each configured Kodi gives itself and
+  whether the first automatic search on the network ran, no secret;
+- network: HTTP(S) to the web server of the Kodi addresses entered or found
+  on the network (JSON-RPC and artwork, Basic authentication), and a WebSocket
+  to port 9090 of the same hosts, on the local network. No other outbound
+  connection. Redirects are not followed, so a password is never sent to
+  another address. The search on the network goes through the Gladys core
+  (mDNS), the container sends no multicast.
+
 Out of scope: Gladys Assistant itself (see its
 [security policy](https://github.com/GladysAssistant/Gladys/security/policy)),
-and the third-party services and devices the integration talks to.
+and Kodi itself (see its
+[security policy](https://github.com/xbmc/xbmc/security/policy)). Note that
+Kodi's port 9090 has no authentication: whoever reaches it controls Kodi.

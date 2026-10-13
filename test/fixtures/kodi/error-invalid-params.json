@@ -1,0 +1,21 @@
+{
+  "id": 5,
+  "jsonrpc": "2.0",
+  "result": {
+    "live": false,
+    "percentage": 0,
+    "speed": 0,
+    "time": {
+      "hours": 0,
+      "milliseconds": 0,
+      "minutes": 0,
+      "seconds": 0
+    },
+    "totaltime": {
+      "hours": 0,
+      "milliseconds": 0,
+      "minutes": 0,
+      "seconds": 0
+    }
+  }
+}

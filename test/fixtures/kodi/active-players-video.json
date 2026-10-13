@@ -1,0 +1,11 @@
+{
+  "id": 7,
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "playerid": 1,
+      "playertype": "internal",
+      "type": "video"
+    }
+  ]
+}
