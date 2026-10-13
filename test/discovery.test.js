@@ -113,6 +113,7 @@ test('the automatic search runs once, and says when nothing is found', async (t)
   assert.equal(scans.length, 2, 'once at the first start, once for the click');
 
   // The next start (same /data) does not search by itself any more.
+  await world.hub.store.flush(); // the "searched" mark is on disk
   const again = await createWorld({
     config: {},
     scanResults: { mdns: [] },

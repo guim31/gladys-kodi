@@ -100,6 +100,7 @@ export class Hub {
     this.lastStatus = '';
     this.widgetRefreshAt = 0;
     this.widgetTimer = null;
+    this.publishFailing = false;
     this.stopped = false;
   }
 
@@ -275,8 +276,15 @@ export class Hub {
     const states = buildStates(this.gladys, entry.slot, entry.kodi.snapshot, this.language);
     try {
       await this.gladys.publishChangedStates(states);
+      if (this.publishFailing) {
+        this.publishFailing = false;
+        logger.info('States published again');
+      }
     } catch (err) {
-      logger.warn(`Cannot publish the states of Kodi ${entry.slot}: ${err.message}`);
+      // Gladys away: one line, not one per state change until it is back.
+      const log = this.publishFailing ? logger.debug : logger.warn;
+      this.publishFailing = true;
+      log(`Cannot publish the states of Kodi ${entry.slot}: ${err.message}`);
     }
   }
 
@@ -316,7 +324,8 @@ export class Hub {
     if (event.type === 'stopped') {
       data.ended = event.ended === true;
     }
-    logger.info(`Kodi ${entry.slot}: playback ${event.type} (${data.media_type})`);
+    // One line per notification would be noise in info: debug only.
+    logger.debug(`Kodi ${entry.slot}: playback ${event.type} (${data.media_type})`);
     try {
       await this.gladys.publishSceneEvent(key, data);
     } catch (err) {

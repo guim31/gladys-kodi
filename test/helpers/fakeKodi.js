@@ -126,6 +126,7 @@ export class FakeKodi {
     this.friendlyName = name;
     this.application = { ...result('application-properties.json') };
     this.down = false;
+    this.downCode = 'EHOSTUNREACH';
     this.silent = false;
     this.sockets = new Set();
     this.calls = [];
@@ -308,7 +309,7 @@ export class FakeKodi {
 
   async fetch(url, init = {}) {
     if (this.down) {
-      throw new TypeError('fetch failed', { cause: { code: 'EHOSTUNREACH' } });
+      throw new TypeError('fetch failed', { cause: { code: this.downCode } });
     }
     const { pathname } = new URL(url);
     if (this.password !== null) {

@@ -342,3 +342,31 @@ test('a progress read between two playlist items keeps the stop grace', async (t
     ['playback_started', 'playback_started'],
   );
 });
+
+// Gladys#3198: devices created without should_poll are never polled by the
+// core, even once fixed. The integration reads Kodi by itself.
+test('the internal timer reads Kodi without any onPoll from Gladys', async (t) => {
+  const kodi = new FakeKodi({ websocket: false });
+  const world = await withDevice({ kodis: [kodi] });
+  t.after(() => world.app.stop());
+  const { gladys, hub } = world;
+  const poll = t.mock.method(hub, 'poll');
+  kodi.playSong(); // over HTTP only: no notification, only the timer sees it
+  await until(() => text(gladys, 'state') === 'En lecture', 2000, 'playing');
+  kodi.pause();
+  await until(() => text(gladys, 'state') === 'En pause', 2000, 'paused');
+  assert.equal(poll.mock.callCount(), 0);
+});
+
+test('onPoll stays a working fallback', async (t) => {
+  const kodi = new FakeKodi({ websocket: false });
+  const timings = { pollInterval: 60_000, offlineInterval: 60_000, notificationDelay: 5 };
+  const world = await withDevice({ kodis: [kodi], timings });
+  t.after(() => world.app.stop());
+  const { gladys } = world;
+  kodi.playSong();
+  await settle(60);
+  assert.equal(text(gladys, 'state'), 'Arrêté', 'the timer is not due yet');
+  await gladys.fake.poll(created(gladys));
+  await until(() => text(gladys, 'state') === 'En lecture', 2000, 'read by onPoll');
+});
