@@ -396,11 +396,12 @@ export class KodiInstance extends EventEmitter {
       logger.debug(`Kodi ${this.slot}: ${message}`);
       return;
     }
-    if (message !== this.lastError) {
-      logger.warn(`Kodi ${this.slot}: ${message}`);
-    }
     const unauthorized = kind === 'unauthorized';
     const changed = this.reachable || this.unauthorized !== unauthorized || this.lastError === null;
+    // One line when Kodi goes away (or its password is refused), not one per
+    // attempt: the reason of a Kodi turned off varies (timeout, unreachable).
+    // The next line is "reachable" when it comes back.
+    (changed ? logger.warn : logger.debug)(`Kodi ${this.slot}: ${message}`);
     this.reachable = false;
     this.unauthorized = unauthorized;
     this.lastError = message;

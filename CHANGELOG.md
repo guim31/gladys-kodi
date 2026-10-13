@@ -10,6 +10,12 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+### Changed
+
+- Quieter logs: playback events are only written at the debug level, and a Kodi
+  that stays off, or a Gladys that refuses the states, writes one line when the
+  problem starts and one when it ends, instead of one per attempt.
+
 ## [1.0.0] - 2026-10-13
 
 ### Added

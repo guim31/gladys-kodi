@@ -182,7 +182,8 @@ export class KodiSocket extends EventEmitter {
         await this.call('JSONRPC.Ping');
       } catch {
         if (this.socket === socket && this.live) {
-          logger.warn(`No answer from ${this.url}, reconnecting`);
+          // The instance logs the loss ("WebSocket closed") once.
+          logger.debug(`No answer from ${this.url}, reconnecting`);
           this.#drop('no answer to ping');
           this.#scheduleRetry('no answer to ping');
         }
