@@ -1,0 +1,15 @@
+{
+  "id": 2,
+  "jsonrpc": "2.0",
+  "result": {
+    "muted": false,
+    "name": "Kodi",
+    "version": {
+      "major": 20,
+      "minor": 1,
+      "revision": "20230312-nogitfound",
+      "tag": "stable"
+    },
+    "volume": 100
+  }
+}

@@ -16,8 +16,8 @@ its only runtime dependency. It started from the official JavaScript template.
 ```bash
 npm install
 npm test                                  # node --test, the built-in runner
-node --test test/devices.test.js          # one file
-node --test --test-name-pattern "plug"    # tests whose name matches
+node --test test/hub.test.js              # one file
+node --test --test-name-pattern "widget"  # tests whose name matches
 npm run lint                              # ESLint
 npm run format:check                      # Prettier, as the CI runs it
 npm run format                            # Prettier, fix in place
@@ -31,16 +31,24 @@ pushing.
 ## Architecture
 
 ```
-index.js                          SDK wiring only: handlers registered before connect()
-src/devices/index.js              registry of the device blueprints + dispatch helpers
-src/devices/<type>.js             one device type per file (buildDevice, onPoll, onSetValue...)
+index.js                          SDK wiring only: src/app.js registers the handlers before connect()
+src/app.js                        every SDK handler -> the hub (also used by the tests)
+src/hub.js                        instances, devices, states, connection status, scene events, artwork, search
+src/instance.js                   one Kodi: WebSocket + HTTP fallback, reads, transitions, commands
+src/devices.js                    Kodi -> Gladys device, snapshot -> feature states
+src/discovery.js                  mDNS answers (scanNetwork) -> Kodi found -> free config slots
+src/kodi/http.js                  JSON-RPC over HTTP (Basic auth, error kinds, no redirect), /image/
+src/kodi/socket.js                JSON-RPC over WebSocket: calls, notifications, reconnection, ping
+src/kodi/model.js                 reading Kodi answers: snapshot, titles, media types, transitions
 src/scenes.js                     scene action handlers (manifest `scene_actions`)
 src/widgets.js                    dashboard widget handlers (manifest `widgets`)
+src/texts.js                      every text produced by the container, in four languages
 src/config.js                     DEFAULT_CONFIG (mirrors the manifest defaults) + normalization
-src/weather.js                    example driver (Open-Meteo)
+src/store.js                      /data/kodi-state.json (names of the instances, first search done)
 gladys-assistant-integration.json manifest: name, config_schema, actions, image...
-docs/en.md, docs/fr.md            user documentation, re-hosted by Gladys (mandatory)
+docs/{en,fr,de,es}.md             user documentation, re-hosted by Gladys (en and fr mandatory)
 test/                             node --test, against the SDK's fake Gladys (integration-sdk/testing)
+                                  and helpers/fakeKodi.js (recorded Kodi answers)
 .github/scripts/release.mjs       release helpers (manifest bump, changelog), tested in test/
 ```
 
@@ -70,8 +78,9 @@ test/                             node --test, against the SDK's fake Gladys (in
   `type: "provider"`: 5.1.0). `test/manifest.test.js` ties the manifest to the
   code (defaults, action, scene and widget handlers): change both sides
   together.
-- **User-facing text** is bilingual (English and French): action messages,
-  manifest texts, and `docs/en.md` / `docs/fr.md`, kept in sync.
+- **User-facing text** exists in English, French, German and Spanish: action
+  messages, manifest texts, feature names, widget contents, and
+  `docs/{en,fr,de,es}.md`, kept in sync (`test/i18n.test.js`).
 - **Style.** Prettier formats, ESLint catches mistakes. Comments explain why,
   in English. Tests never touch the network.
 
@@ -213,3 +222,54 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 - Docs `en`, `fr`, `de`, `es` avec les mêmes sections.
 - Chauffe, ouverture, sécurité : ne rien rendre pilotable « comme un thermostat » ou par un assistant
   vocal quand une erreur serait dangereuse (leçon d'OctoPrint).
+
+## Kodi (appris sur cette intégration)
+
+Faits vérifiés sur un vrai Kodi 20.1 (paquet Debian bookworm dans Docker, X11 sur Xvfb, carte son
+PulseAudio muette : lecture réelle) et sur Kodi 21.3 et 22 (images `matthuisman/kodi-headless`,
+qui ne lisent rien : un fichier vidéo y fait planter Kodi, un audio reste bloqué sans notification).
+Réponses enregistrées dans `test/fixtures/kodi/`.
+
+- **Deux portes** : `POST /jsonrpc` sur le serveur web (8080, Basic auth, 401 sans le bon mot de
+  passe ; utilisateur `kodi` par défaut) et le WebSocket `ws://<hôte>:9090/jsonrpc`, **sans
+  authentification**, ouvert au réseau seulement avec « Autoriser le contrôle à distance depuis des
+  applications sur d'autres systèmes ». Mêmes méthodes des deux côtés ; seules les notifications
+  viennent du WebSocket. Un appel avec `params: null` est refusé (« Invalid request ») : omettre la
+  clé. Kodi ne pousse rien au repos ni la position en lecture : ping (`JSONRPC.Ping`) toutes les
+  30 s et lecture de la progression toutes les 10 s.
+- **Notifications** : `Player.OnPlay`, `OnAVStart` (et des rafales de `OnAVChange`), `OnPause`,
+  `OnResume` (depuis Kodi 18 ; avant, `OnPlay`), `OnStop { end }`, `OnSeek` (avec `player.time`),
+  `Application.OnVolumeChanged { volume, muted }`. **Entre deux éléments d'une liste de lecture :
+  `OnStop (end: true)` puis `OnPlay` 0,1 s plus tard** : la lecture après un `OnStop` attend 1,5 s
+  (`stopGrace`), sinon les scènes « arrêt » clignotent entre deux épisodes.
+- **Hors bibliothèque** : la notification dit `type: "movie"` et le nom du fichier en `title`,
+  mais `Player.GetItem` répond `type: "unknown"`, `title: ""`, `label` = nom du fichier, `art` = la
+  seule icône `image://DefaultFolder.png/`. On classe donc ce cas en `video` (« Autre vidéo ») et on
+  retire l'extension du libellé. Les éléments de la bibliothèque ont un `id` (identité stable ;
+  un flux radio change de titre, pas de fichier).
+- **Images** : `GET /image/<image://… encodé>` ne sert **que** les images du cache de textures
+  (art de la bibliothèque) : 404 pour un chemin arbitraire (bonne chose : pas de lecture de
+  fichiers). Le cache redimensionne (une pochette 1000 px de 238 Ko servie en 47 Ko) ; pas
+  d'en-tête `content-type` : reconnaître l'image à ses octets.
+- **Identité** : JSON-RPC ne donne ni l'uuid (`Settings.GetSettingValue services.deviceuuid` →
+  Invalid params) ni une MAC fiable (`Network.MacAddress` → `"Busy"` puis vide en Docker). L'uuid
+  n'existe que dans le TXT mDNS. D'où l'identité par **emplacement** de config (comme OctoPrint),
+  le nom par `System.FriendlyName`.
+- **mDNS** : `_xbmc-jsonrpc-h._tcp` (port du serveur web) et `_xbmc-jsonrpc._tcp` (port 9090),
+  TXT `uuid`, quand « Annoncer les services aux autres systèmes » est activé (défaut). Ce qui est
+  trouvé remplit les emplacements libres par `setConfig` (pas d'écho `config-updated` : mettre la
+  config en mémoire à jour soi-même).
+- `AudioLibrary.Scan` sans `directory` ne fait rien sur un profil neuf dont les sources n'ont pas
+  encore de type de contenu ; avec `directory`, si. L'action de scène reste sans répertoire (le cas
+  réel : des sources déjà configurées).
+- **Pièges Gladys rencontrés** : la catégorie `music` (play, pause, next…) a une boîte « Musique »
+  au tableau de bord, mais ses types n'ont **aucun composant de ligne** dans la boîte « Appareils
+  d'une pièce » (affichés comme des nombres) ; la catégorie `television` est rendue en boutons de
+  télécommande (icône seule, `PushDeviceFeature`) et `television/volume` en curseur. Choix :
+  `television/*`. Ces boutons, seuls de leur type, s'affichent sous le **nom de l'appareil** (règle
+  du front, comme pour toute télé). Aucun `music/playback_state` (affiché « 0 »/« 1 ») : l'état est
+  un `text/text` et l'action de scène `get_status` sert les conditions.
+- Déclencheurs : ils reflètent ce que Kodi fait vraiment, quelle qu'en soit l'origine
+  (`play_media` est suivi de `playback_started`) ; rien pour ce qui jouait au démarrage de
+  l'intégration, ni à l'extinction de Kodi, ni à son retour avec le même média
+  (`lastIdentity`). La doc prévient de la boucle « lecture démarrée → lancer une lecture ».

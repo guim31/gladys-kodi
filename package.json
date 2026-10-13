@@ -1,8 +1,8 @@
 {
-  "name": "gladys-integration-template-js",
+  "name": "gladys-kodi",
   "version": "1.0.0",
   "private": true,
-  "description": "Official starter template to build an external integration for Gladys Assistant with the JavaScript SDK.",
+  "description": "Kodi integration for Gladys Assistant: follow and control what Kodi plays.",
   "type": "module",
   "main": "index.js",
   "scripts": {

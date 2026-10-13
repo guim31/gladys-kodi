@@ -1,0 +1,21 @@
+{
+  "id": 8,
+  "jsonrpc": "2.0",
+  "result": {
+    "item": {
+      "album": "",
+      "art": {
+        "icon": "image://DefaultFolder.png/"
+      },
+      "artist": [],
+      "episode": -1,
+      "file": "/media/Big Test Movie (2024).mp4",
+      "label": "Big Test Movie (2024).mp4",
+      "season": -1,
+      "showtitle": "",
+      "title": "",
+      "type": "unknown",
+      "year": 0
+    }
+  }
+}

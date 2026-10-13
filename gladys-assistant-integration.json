@@ -1,147 +1,871 @@
 {
   "manifest_version": 1,
   "type": "device",
-  "name": "Demo Devices Template",
+  "name": "Kodi",
   "description": {
-    "en": "Starter template showing sensors, a switch, a dimmable light and a smart plug.",
-    "fr": "Template de démarrage : capteurs, interrupteur, lampe variable et prise connectée."
+    "en": "Follow and control Kodi: what plays, volume, buttons, scenes when a movie starts.",
+    "fr": "Suivez et pilotez Kodi : lecture en cours, volume, boutons, scènes au lancement d'un film.",
+    "de": "Verfolge und steuere Kodi: aktuelle Wiedergabe, Lautstärke, Tasten, Szenen beim Filmstart.",
+    "es": "Siga y controle Kodi: lo que se reproduce, volumen, botones, escenas al empezar una película."
   },
   "version": "1.0.0",
-  "docker_image": "ghcr.io/gladysassistant/integration-template-js:1.0.0",
+  "docker_image": "ghcr.io/guim31/gladys-kodi:1.0.0",
   "gladys_version": ">=5.1.0",
-  "cover_image": "https://raw.githubusercontent.com/GladysAssistant/integration-template-js/master/cover.png",
-  "categories": ["lighting", "security", "environment"],
-  "transports": ["local", "cloud"],
+  "cover_image": "https://raw.githubusercontent.com/guim31/gladys-kodi/main/cover.png",
+  "categories": ["multimedia"],
+  "transports": ["local"],
+  "network_discovery": [
+    {
+      "type": "mdns",
+      "service": "_xbmc-jsonrpc-h._tcp"
+    },
+    {
+      "type": "mdns",
+      "service": "_xbmc-jsonrpc._tcp"
+    }
+  ],
   "config_schema": [
     {
       "key": "intro",
       "type": "section",
-      "label": { "en": "Getting started", "fr": "Pour commencer" },
+      "label": {
+        "en": "Connect your Kodi",
+        "fr": "Connecter votre Kodi",
+        "de": "Verbinde dein Kodi",
+        "es": "Conecte su Kodi"
+      },
       "description": {
-        "en": "The demo weather station reads real data from the free Open-Meteo API: pick the coordinates to observe. No account, no API key.",
-        "fr": "La station météo de démonstration lit de vraies données via l'API gratuite Open-Meteo : choisissez les coordonnées à observer. Pas de compte, pas de clé d'API."
+        "en": "In Kodi, open Settings, Services, Control and turn on \"Allow remote control via HTTP\" and \"Allow remote control from applications on other systems\". Then click \"Find Kodi on the network\" below, or type its address. Up to three Kodi.",
+        "fr": "Dans Kodi, ouvrez Paramètres, Services, Contrôle et activez « Autoriser le contrôle à distance via HTTP » et « Autoriser le contrôle à distance depuis des applications sur d'autres systèmes ». Cliquez ensuite sur « Chercher Kodi sur le réseau » plus bas, ou saisissez son adresse. Jusqu'à trois Kodi.",
+        "de": "Öffne in Kodi Einstellungen, Dienste, Steuerung und aktiviere „Fernsteuerung via HTTP erlauben“ und „Fernsteuerung durch Anwendungen auf anderen Systemen erlauben“. Klicke dann unten auf „Kodi im Netzwerk suchen“ oder gib seine Adresse ein. Bis zu drei Kodi.",
+        "es": "En Kodi, abra Ajustes, Servicios, Control y active «Permitir el control remoto vía HTTP» y «Permitir el control remoto desde aplicaciones de otros sistemas». Después pulse «Buscar Kodi en la red» más abajo, o introduzca su dirección. Hasta tres Kodi."
       },
       "links": [
         {
-          "url": "https://open-meteo.com/en/docs",
-          "label": { "en": "Open-Meteo documentation", "fr": "Documentation Open-Meteo" }
+          "url": "https://kodi.wiki/view/Settings/Services/Control",
+          "label": {
+            "en": "Kodi: remote control settings",
+            "fr": "Kodi : réglages du contrôle à distance",
+            "de": "Kodi: Einstellungen der Fernsteuerung",
+            "es": "Kodi: ajustes del control remoto"
+          }
         }
       ]
     },
     {
-      "key": "latitude",
-      "type": "number",
-      "label": { "en": "Latitude", "fr": "Latitude" },
-      "description": {
-        "en": "Latitude used for the demo weather sensor.",
-        "fr": "Latitude utilisée par le capteur météo de démonstration."
+      "key": "host_1",
+      "type": "string",
+      "label": {
+        "en": "Kodi address",
+        "fr": "Adresse de Kodi",
+        "de": "Kodi-Adresse",
+        "es": "Dirección de Kodi"
       },
-      "placeholder": { "en": "e.g. 48.8566", "fr": "ex. 48.8566" },
-      "required": true,
-      "default": 48.8566,
-      "min": -90,
-      "max": 90
+      "placeholder": {
+        "en": "e.g. 192.168.1.40",
+        "fr": "ex. 192.168.1.40",
+        "de": "z. B. 192.168.1.40",
+        "es": "p. ej. 192.168.1.40"
+      },
+      "required": false,
+      "default": "",
+      "description": {
+        "en": "IP address of the device running Kodi. Add :port if its web server does not use 8080.",
+        "fr": "Adresse IP de l'appareil qui fait tourner Kodi. Ajoutez :port si son serveur web n'utilise pas 8080.",
+        "de": "IP-Adresse des Geräts, auf dem Kodi läuft. Ergänze :Port, wenn sein Webserver nicht 8080 nutzt.",
+        "es": "Dirección IP del equipo que ejecuta Kodi. Añada :puerto si su servidor web no usa el 8080."
+      }
     },
     {
-      "key": "longitude",
-      "type": "number",
-      "label": { "en": "Longitude", "fr": "Longitude" },
-      "description": {
-        "en": "Longitude used for the demo weather sensor.",
-        "fr": "Longitude utilisée par le capteur météo de démonstration."
+      "key": "username_1",
+      "type": "string",
+      "label": {
+        "en": "User name",
+        "fr": "Nom d'utilisateur",
+        "de": "Benutzername",
+        "es": "Usuario"
       },
-      "placeholder": { "en": "e.g. 2.3522", "fr": "ex. 2.3522" },
-      "required": true,
-      "default": 2.3522,
-      "min": -180,
-      "max": 180
+      "placeholder": {
+        "en": "kodi",
+        "fr": "kodi",
+        "de": "kodi",
+        "es": "kodi"
+      },
+      "required": false,
+      "default": "",
+      "description": {
+        "en": "Of Kodi's web server. Empty: kodi.",
+        "fr": "Du serveur web de Kodi. Vide : kodi.",
+        "de": "Des Kodi-Webservers. Leer: kodi.",
+        "es": "Del servidor web de Kodi. Vacío: kodi."
+      }
     },
     {
-      "key": "unit",
+      "key": "password_1",
+      "type": "secret",
+      "label": {
+        "en": "Password",
+        "fr": "Mot de passe",
+        "de": "Passwort",
+        "es": "Contraseña"
+      },
+      "required": false,
+      "description": {
+        "en": "Leave empty if Kodi asks for none.",
+        "fr": "Laissez vide si Kodi n'en demande pas.",
+        "de": "Leer lassen, wenn Kodi keines verlangt.",
+        "es": "Déjelo vacío si Kodi no la pide."
+      }
+    },
+    {
+      "key": "section_2",
+      "type": "section",
+      "label": {
+        "en": "Kodi 2 (optional)",
+        "fr": "Kodi 2 (facultatif)",
+        "de": "Kodi 2 (optional)",
+        "es": "Kodi 2 (opcional)"
+      },
+      "description": {
+        "en": "Another Kodi, set up the same way.",
+        "fr": "Un autre Kodi, configuré de la même façon.",
+        "de": "Ein weiteres Kodi, genauso eingerichtet.",
+        "es": "Otro Kodi, configurado de la misma manera."
+      }
+    },
+    {
+      "key": "host_2",
+      "type": "string",
+      "label": {
+        "en": "Kodi address 2",
+        "fr": "Adresse de Kodi 2",
+        "de": "Kodi-Adresse 2",
+        "es": "Dirección de Kodi 2"
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.40",
+        "fr": "ex. 192.168.1.40",
+        "de": "z. B. 192.168.1.40",
+        "es": "p. ej. 192.168.1.40"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "username_2",
+      "type": "string",
+      "label": {
+        "en": "User name 2",
+        "fr": "Nom d'utilisateur 2",
+        "de": "Benutzername 2",
+        "es": "Usuario 2"
+      },
+      "placeholder": {
+        "en": "kodi",
+        "fr": "kodi",
+        "de": "kodi",
+        "es": "kodi"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "password_2",
+      "type": "secret",
+      "label": {
+        "en": "Password 2",
+        "fr": "Mot de passe 2",
+        "de": "Passwort 2",
+        "es": "Contraseña 2"
+      },
+      "required": false
+    },
+    {
+      "key": "section_3",
+      "type": "section",
+      "label": {
+        "en": "Kodi 3 (optional)",
+        "fr": "Kodi 3 (facultatif)",
+        "de": "Kodi 3 (optional)",
+        "es": "Kodi 3 (opcional)"
+      },
+      "description": {
+        "en": "Another Kodi, set up the same way.",
+        "fr": "Un autre Kodi, configuré de la même façon.",
+        "de": "Ein weiteres Kodi, genauso eingerichtet.",
+        "es": "Otro Kodi, configurado de la misma manera."
+      }
+    },
+    {
+      "key": "host_3",
+      "type": "string",
+      "label": {
+        "en": "Kodi address 3",
+        "fr": "Adresse de Kodi 3",
+        "de": "Kodi-Adresse 3",
+        "es": "Dirección de Kodi 3"
+      },
+      "placeholder": {
+        "en": "e.g. 192.168.1.40",
+        "fr": "ex. 192.168.1.40",
+        "de": "z. B. 192.168.1.40",
+        "es": "p. ej. 192.168.1.40"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "username_3",
+      "type": "string",
+      "label": {
+        "en": "User name 3",
+        "fr": "Nom d'utilisateur 3",
+        "de": "Benutzername 3",
+        "es": "Usuario 3"
+      },
+      "placeholder": {
+        "en": "kodi",
+        "fr": "kodi",
+        "de": "kodi",
+        "es": "kodi"
+      },
+      "required": false,
+      "default": ""
+    },
+    {
+      "key": "password_3",
+      "type": "secret",
+      "label": {
+        "en": "Password 3",
+        "fr": "Mot de passe 3",
+        "de": "Passwort 3",
+        "es": "Contraseña 3"
+      },
+      "required": false
+    },
+    {
+      "key": "section_options",
+      "type": "section",
+      "label": {
+        "en": "Options",
+        "fr": "Options",
+        "de": "Optionen",
+        "es": "Opciones"
+      },
+      "description": {
+        "en": "Language of the names and texts the integration creates (feature names are set when a device is added).",
+        "fr": "Langue des noms et textes créés par l'intégration (les noms des fonctionnalités sont fixés à l'ajout de l'appareil).",
+        "de": "Sprache der Namen und Texte, die die Integration erzeugt (Funktionsnamen werden beim Hinzufügen des Geräts festgelegt).",
+        "es": "Idioma de los nombres y textos que crea la integración (los nombres de las funciones se fijan al añadir el dispositivo)."
+      }
+    },
+    {
+      "key": "language",
       "type": "select",
-      "label": { "en": "Temperature unit", "fr": "Unité de température" },
-      "required": false,
-      "default": "celsius",
-      "options": [
-        { "value": "celsius", "label": { "en": "Celsius", "fr": "Celsius" } },
-        { "value": "fahrenheit", "label": { "en": "Fahrenheit", "fr": "Fahrenheit" } }
-      ]
-    },
-    {
-      "key": "poll_frequency",
-      "type": "number",
-      "label": { "en": "Refresh interval (s)", "fr": "Intervalle de rafraîchissement (s)" },
-      "description": {
-        "en": "How often sensors are polled, in seconds (one minute minimum).",
-        "fr": "Fréquence d'interrogation des capteurs, en secondes (une minute minimum)."
+      "label": {
+        "en": "Language",
+        "fr": "Langue",
+        "de": "Sprache",
+        "es": "Idioma"
       },
       "required": false,
-      "default": 300,
-      "min": 60,
-      "max": 3600
+      "default": "fr",
+      "options": [
+        {
+          "value": "en",
+          "label": {
+            "en": "English",
+            "fr": "Anglais",
+            "de": "Englisch",
+            "es": "Inglés"
+          }
+        },
+        {
+          "value": "fr",
+          "label": {
+            "en": "French",
+            "fr": "Français",
+            "de": "Französisch",
+            "es": "Francés"
+          }
+        },
+        {
+          "value": "de",
+          "label": {
+            "en": "German",
+            "fr": "Allemand",
+            "de": "Deutsch",
+            "es": "Alemán"
+          }
+        },
+        {
+          "value": "es",
+          "label": {
+            "en": "Spanish",
+            "fr": "Espagnol",
+            "de": "Spanisch",
+            "es": "Español"
+          }
+        }
+      ]
     }
   ],
   "actions": [
     {
-      "key": "test_weather",
-      "label": { "en": "Test the weather provider", "fr": "Tester le fournisseur météo" },
+      "key": "find_kodi",
+      "label": {
+        "en": "Find Kodi on the network",
+        "fr": "Chercher Kodi sur le réseau",
+        "de": "Kodi im Netzwerk suchen",
+        "es": "Buscar Kodi en la red"
+      },
       "timeout_seconds": 30
     },
     {
-      "key": "identify",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
-      "fields": [
-        {
-          "key": "device",
-          "type": "select",
-          "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
-          "required": true
-        }
-      ]
+      "key": "test_connection",
+      "label": {
+        "en": "Test the connection",
+        "fr": "Tester la connexion",
+        "de": "Verbindung testen",
+        "es": "Probar la conexión"
+      },
+      "timeout_seconds": 60
     }
   ],
   "scene_triggers": [
     {
-      "key": "motion_detected",
-      "label": { "en": "Motion detected", "fr": "Mouvement détecté" },
+      "key": "playback_started",
+      "label": {
+        "en": "Playback started",
+        "fr": "Lecture démarrée",
+        "de": "Wiedergabe gestartet",
+        "es": "Reproducción iniciada"
+      },
       "description": {
-        "en": "A demo motion sensor saw a person or an animal move.",
-        "fr": "Un détecteur de démonstration a vu bouger une personne ou un animal."
+        "en": "Kodi starts playing something: a movie, an episode, the next song.",
+        "fr": "Kodi commence à lire quelque chose : un film, un épisode, la chanson suivante.",
+        "de": "Kodi beginnt etwas abzuspielen: einen Film, eine Folge, das nächste Lied.",
+        "es": "Kodi empieza a reproducir algo: una película, un episodio, la siguiente canción."
       },
       "fields": [
         {
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Sensor", "fr": "Détecteur" }
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          }
         },
         {
-          "key": "target",
+          "key": "media_type",
           "type": "multi_select",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" },
+          "label": {
+            "en": "Media types",
+            "fr": "Types de média",
+            "de": "Medientypen",
+            "es": "Tipos de medio"
+          },
           "options": [
-            { "value": "person", "label": { "en": "Person", "fr": "Personne" } },
-            { "value": "animal", "label": { "en": "Animal", "fr": "Animal" } }
+            {
+              "value": "movie",
+              "label": {
+                "en": "Movie",
+                "fr": "Film",
+                "de": "Film",
+                "es": "Película"
+              }
+            },
+            {
+              "value": "episode",
+              "label": {
+                "en": "TV episode",
+                "fr": "Épisode",
+                "de": "Serienfolge",
+                "es": "Episodio"
+              }
+            },
+            {
+              "value": "music",
+              "label": {
+                "en": "Music",
+                "fr": "Musique",
+                "de": "Musik",
+                "es": "Música"
+              }
+            },
+            {
+              "value": "tv",
+              "label": {
+                "en": "TV channel",
+                "fr": "Chaîne TV",
+                "de": "TV-Sender",
+                "es": "Canal de TV"
+              }
+            },
+            {
+              "value": "video",
+              "label": {
+                "en": "Other video (file, stream)",
+                "fr": "Autre vidéo (fichier, flux)",
+                "de": "Anderes Video (Datei, Stream)",
+                "es": "Otro vídeo (archivo, flujo)"
+              }
+            }
           ]
         }
       ],
       "variables": [
         {
-          "key": "target",
+          "key": "title",
           "type": "string",
-          "label": { "en": "What moved", "fr": "Ce qui a bougé" }
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "media_type",
+          "type": "string",
+          "label": {
+            "en": "Media type (key)",
+            "fr": "Type de média (clé)",
+            "de": "Medientyp (Schlüssel)",
+            "es": "Tipo de medio (clave)"
+          }
+        },
+        {
+          "key": "media_label",
+          "type": "string",
+          "label": {
+            "en": "Media type",
+            "fr": "Type de média",
+            "de": "Medientyp",
+            "es": "Tipo de medio"
+          }
+        },
+        {
+          "key": "kodi",
+          "type": "string",
+          "label": {
+            "en": "Kodi name",
+            "fr": "Nom du Kodi",
+            "de": "Kodi-Name",
+            "es": "Nombre del Kodi"
+          }
+        }
+      ]
+    },
+    {
+      "key": "playback_paused",
+      "label": {
+        "en": "Playback paused",
+        "fr": "Lecture en pause",
+        "de": "Wiedergabe pausiert",
+        "es": "Reproducción en pausa"
+      },
+      "description": {
+        "en": "What Kodi plays is paused.",
+        "fr": "La lecture en cours sur Kodi est mise en pause.",
+        "de": "Die Wiedergabe auf Kodi wird pausiert.",
+        "es": "La reproducción en Kodi se pone en pausa."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          }
+        },
+        {
+          "key": "media_type",
+          "type": "multi_select",
+          "label": {
+            "en": "Media types",
+            "fr": "Types de média",
+            "de": "Medientypen",
+            "es": "Tipos de medio"
+          },
+          "options": [
+            {
+              "value": "movie",
+              "label": {
+                "en": "Movie",
+                "fr": "Film",
+                "de": "Film",
+                "es": "Película"
+              }
+            },
+            {
+              "value": "episode",
+              "label": {
+                "en": "TV episode",
+                "fr": "Épisode",
+                "de": "Serienfolge",
+                "es": "Episodio"
+              }
+            },
+            {
+              "value": "music",
+              "label": {
+                "en": "Music",
+                "fr": "Musique",
+                "de": "Musik",
+                "es": "Música"
+              }
+            },
+            {
+              "value": "tv",
+              "label": {
+                "en": "TV channel",
+                "fr": "Chaîne TV",
+                "de": "TV-Sender",
+                "es": "Canal de TV"
+              }
+            },
+            {
+              "value": "video",
+              "label": {
+                "en": "Other video (file, stream)",
+                "fr": "Autre vidéo (fichier, flux)",
+                "de": "Anderes Video (Datei, Stream)",
+                "es": "Otro vídeo (archivo, flujo)"
+              }
+            }
+          ]
+        }
+      ],
+      "variables": [
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "media_type",
+          "type": "string",
+          "label": {
+            "en": "Media type (key)",
+            "fr": "Type de média (clé)",
+            "de": "Medientyp (Schlüssel)",
+            "es": "Tipo de medio (clave)"
+          }
+        },
+        {
+          "key": "media_label",
+          "type": "string",
+          "label": {
+            "en": "Media type",
+            "fr": "Type de média",
+            "de": "Medientyp",
+            "es": "Tipo de medio"
+          }
+        },
+        {
+          "key": "kodi",
+          "type": "string",
+          "label": {
+            "en": "Kodi name",
+            "fr": "Nom du Kodi",
+            "de": "Kodi-Name",
+            "es": "Nombre del Kodi"
+          }
+        }
+      ]
+    },
+    {
+      "key": "playback_resumed",
+      "label": {
+        "en": "Playback resumed",
+        "fr": "Lecture reprise",
+        "de": "Wiedergabe fortgesetzt",
+        "es": "Reproducción reanudada"
+      },
+      "description": {
+        "en": "Kodi resumes after a pause.",
+        "fr": "Kodi reprend la lecture après une pause.",
+        "de": "Kodi setzt die Wiedergabe nach einer Pause fort.",
+        "es": "Kodi reanuda la reproducción tras una pausa."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          }
+        },
+        {
+          "key": "media_type",
+          "type": "multi_select",
+          "label": {
+            "en": "Media types",
+            "fr": "Types de média",
+            "de": "Medientypen",
+            "es": "Tipos de medio"
+          },
+          "options": [
+            {
+              "value": "movie",
+              "label": {
+                "en": "Movie",
+                "fr": "Film",
+                "de": "Film",
+                "es": "Película"
+              }
+            },
+            {
+              "value": "episode",
+              "label": {
+                "en": "TV episode",
+                "fr": "Épisode",
+                "de": "Serienfolge",
+                "es": "Episodio"
+              }
+            },
+            {
+              "value": "music",
+              "label": {
+                "en": "Music",
+                "fr": "Musique",
+                "de": "Musik",
+                "es": "Música"
+              }
+            },
+            {
+              "value": "tv",
+              "label": {
+                "en": "TV channel",
+                "fr": "Chaîne TV",
+                "de": "TV-Sender",
+                "es": "Canal de TV"
+              }
+            },
+            {
+              "value": "video",
+              "label": {
+                "en": "Other video (file, stream)",
+                "fr": "Autre vidéo (fichier, flux)",
+                "de": "Anderes Video (Datei, Stream)",
+                "es": "Otro vídeo (archivo, flujo)"
+              }
+            }
+          ]
+        }
+      ],
+      "variables": [
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "media_type",
+          "type": "string",
+          "label": {
+            "en": "Media type (key)",
+            "fr": "Type de média (clé)",
+            "de": "Medientyp (Schlüssel)",
+            "es": "Tipo de medio (clave)"
+          }
+        },
+        {
+          "key": "media_label",
+          "type": "string",
+          "label": {
+            "en": "Media type",
+            "fr": "Type de média",
+            "de": "Medientyp",
+            "es": "Tipo de medio"
+          }
+        },
+        {
+          "key": "kodi",
+          "type": "string",
+          "label": {
+            "en": "Kodi name",
+            "fr": "Nom du Kodi",
+            "de": "Kodi-Name",
+            "es": "Nombre del Kodi"
+          }
+        }
+      ]
+    },
+    {
+      "key": "playback_stopped",
+      "label": {
+        "en": "Playback stopped",
+        "fr": "Lecture arrêtée",
+        "de": "Wiedergabe gestoppt",
+        "es": "Reproducción detenida"
+      },
+      "description": {
+        "en": "Playback stops, or reaches its end, and nothing follows.",
+        "fr": "La lecture s'arrête ou arrive à sa fin, et rien ne suit.",
+        "de": "Die Wiedergabe stoppt oder endet, und nichts folgt.",
+        "es": "La reproducción se detiene o llega a su fin, y no sigue nada."
+      },
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          }
+        },
+        {
+          "key": "media_type",
+          "type": "multi_select",
+          "label": {
+            "en": "Media types",
+            "fr": "Types de média",
+            "de": "Medientypen",
+            "es": "Tipos de medio"
+          },
+          "options": [
+            {
+              "value": "movie",
+              "label": {
+                "en": "Movie",
+                "fr": "Film",
+                "de": "Film",
+                "es": "Película"
+              }
+            },
+            {
+              "value": "episode",
+              "label": {
+                "en": "TV episode",
+                "fr": "Épisode",
+                "de": "Serienfolge",
+                "es": "Episodio"
+              }
+            },
+            {
+              "value": "music",
+              "label": {
+                "en": "Music",
+                "fr": "Musique",
+                "de": "Musik",
+                "es": "Música"
+              }
+            },
+            {
+              "value": "tv",
+              "label": {
+                "en": "TV channel",
+                "fr": "Chaîne TV",
+                "de": "TV-Sender",
+                "es": "Canal de TV"
+              }
+            },
+            {
+              "value": "video",
+              "label": {
+                "en": "Other video (file, stream)",
+                "fr": "Autre vidéo (fichier, flux)",
+                "de": "Anderes Video (Datei, Stream)",
+                "es": "Otro vídeo (archivo, flujo)"
+              }
+            }
+          ]
+        }
+      ],
+      "variables": [
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "media_type",
+          "type": "string",
+          "label": {
+            "en": "Media type (key)",
+            "fr": "Type de média (clé)",
+            "de": "Medientyp (Schlüssel)",
+            "es": "Tipo de medio (clave)"
+          }
+        },
+        {
+          "key": "media_label",
+          "type": "string",
+          "label": {
+            "en": "Media type",
+            "fr": "Type de média",
+            "de": "Medientyp",
+            "es": "Tipo de medio"
+          }
+        },
+        {
+          "key": "kodi",
+          "type": "string",
+          "label": {
+            "en": "Kodi name",
+            "fr": "Nom du Kodi",
+            "de": "Kodi-Name",
+            "es": "Nombre del Kodi"
+          }
+        },
+        {
+          "key": "ended",
+          "type": "boolean",
+          "label": {
+            "en": "Reached the end",
+            "fr": "Arrivé à la fin",
+            "de": "Bis zum Ende",
+            "es": "Llegó al final"
+          }
         }
       ]
     }
   ],
   "scene_actions": [
     {
-      "key": "identify_device",
-      "label": { "en": "Identify a device", "fr": "Identifier un appareil" },
+      "key": "control_playback",
+      "label": {
+        "en": "Control the playback",
+        "fr": "Piloter la lecture",
+        "de": "Wiedergabe steuern",
+        "es": "Controlar la reproducción"
+      },
       "description": {
-        "en": "Make a device signal itself (the demo light blinks).",
-        "fr": "Fait se signaler un appareil (la lampe de démonstration clignote)."
+        "en": "Play, pause, stop, next or previous item.",
+        "fr": "Lecture, pause, arrêt, élément suivant ou précédent.",
+        "de": "Abspielen, Pause, Stopp, nächster oder vorheriger Titel.",
+        "es": "Reproducir, pausa, detener, elemento siguiente o anterior."
       },
       "timeout_seconds": 15,
       "fields": [
@@ -149,29 +873,533 @@
           "key": "device",
           "type": "select",
           "source": "devices",
-          "label": { "en": "Device", "fr": "Appareil" },
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          },
+          "required": true
+        },
+        {
+          "key": "command",
+          "type": "select",
+          "label": {
+            "en": "Command",
+            "fr": "Commande",
+            "de": "Befehl",
+            "es": "Comando"
+          },
+          "required": true,
+          "default": "pause",
+          "options": [
+            {
+              "value": "play",
+              "label": {
+                "en": "Play",
+                "fr": "Lire",
+                "de": "Abspielen",
+                "es": "Reproducir"
+              }
+            },
+            {
+              "value": "pause",
+              "label": {
+                "en": "Pause",
+                "fr": "Pause",
+                "de": "Pause",
+                "es": "Pausa"
+              }
+            },
+            {
+              "value": "play_pause",
+              "label": {
+                "en": "Play / pause",
+                "fr": "Lecture / pause",
+                "de": "Abspielen / Pause",
+                "es": "Reproducir / pausa"
+              }
+            },
+            {
+              "value": "stop",
+              "label": {
+                "en": "Stop",
+                "fr": "Arrêter",
+                "de": "Stoppen",
+                "es": "Detener"
+              }
+            },
+            {
+              "value": "next",
+              "label": {
+                "en": "Next",
+                "fr": "Suivant",
+                "de": "Weiter",
+                "es": "Siguiente"
+              }
+            },
+            {
+              "value": "previous",
+              "label": {
+                "en": "Previous",
+                "fr": "Précédent",
+                "de": "Zurück",
+                "es": "Anterior"
+              }
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "key": "applied",
+          "type": "boolean",
+          "label": {
+            "en": "Applied (something was playing)",
+            "fr": "Appliqué (une lecture était en cours)",
+            "de": "Ausgeführt (es lief etwas)",
+            "es": "Aplicado (había una reproducción)"
+          }
+        }
+      ]
+    },
+    {
+      "key": "set_volume",
+      "label": {
+        "en": "Set the volume",
+        "fr": "Régler le volume",
+        "de": "Lautstärke einstellen",
+        "es": "Ajustar el volumen"
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          },
+          "required": true
+        },
+        {
+          "key": "volume",
+          "type": "number",
+          "label": {
+            "en": "Volume (0 to 100)",
+            "fr": "Volume (0 à 100)",
+            "de": "Lautstärke (0 bis 100)",
+            "es": "Volumen (0 a 100)"
+          },
+          "required": true,
+          "default": 30,
+          "min": 0,
+          "max": 100
+        }
+      ],
+      "outputs": [
+        {
+          "key": "volume",
+          "type": "number",
+          "label": {
+            "en": "Volume set",
+            "fr": "Volume réglé",
+            "de": "Eingestellte Lautstärke",
+            "es": "Volumen ajustado"
+          }
+        }
+      ]
+    },
+    {
+      "key": "set_mute",
+      "label": {
+        "en": "Mute or unmute",
+        "fr": "Couper ou rétablir le son",
+        "de": "Stumm schalten oder aufheben",
+        "es": "Silenciar o activar el sonido"
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          },
+          "required": true
+        },
+        {
+          "key": "mode",
+          "type": "select",
+          "label": {
+            "en": "Sound",
+            "fr": "Son",
+            "de": "Ton",
+            "es": "Sonido"
+          },
+          "required": true,
+          "default": "mute",
+          "options": [
+            {
+              "value": "mute",
+              "label": {
+                "en": "Mute",
+                "fr": "Couper",
+                "de": "Stumm",
+                "es": "Silenciar"
+              }
+            },
+            {
+              "value": "unmute",
+              "label": {
+                "en": "Unmute",
+                "fr": "Rétablir",
+                "de": "Ton an",
+                "es": "Activar"
+              }
+            },
+            {
+              "value": "toggle",
+              "label": {
+                "en": "Toggle",
+                "fr": "Inverser",
+                "de": "Umschalten",
+                "es": "Alternar"
+              }
+            }
+          ]
+        }
+      ],
+      "outputs": [
+        {
+          "key": "muted",
+          "type": "boolean",
+          "label": {
+            "en": "Muted",
+            "fr": "Son coupé",
+            "de": "Stumm",
+            "es": "Silenciado"
+          }
+        }
+      ]
+    },
+    {
+      "key": "show_notification",
+      "label": {
+        "en": "Show a notification on Kodi",
+        "fr": "Afficher une notification sur Kodi",
+        "de": "Benachrichtigung auf Kodi anzeigen",
+        "es": "Mostrar una notificación en Kodi"
+      },
+      "description": {
+        "en": "A message in the corner of the screen, over what plays.",
+        "fr": "Un message dans le coin de l'écran, par-dessus la lecture.",
+        "de": "Eine Nachricht in der Bildschirmecke, über der Wiedergabe.",
+        "es": "Un mensaje en la esquina de la pantalla, sobre lo que se reproduce."
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          },
+          "required": true
+        },
+        {
+          "key": "message",
+          "type": "string",
+          "label": {
+            "en": "Message",
+            "fr": "Message",
+            "de": "Nachricht",
+            "es": "Mensaje"
+          },
+          "required": true
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          },
+          "required": false,
+          "default": "Gladys"
+        },
+        {
+          "key": "duration",
+          "type": "number",
+          "label": {
+            "en": "Display time (seconds)",
+            "fr": "Durée d'affichage (secondes)",
+            "de": "Anzeigedauer (Sekunden)",
+            "es": "Duración (segundos)"
+          },
+          "required": false,
+          "default": 5,
+          "min": 2,
+          "max": 60
+        }
+      ]
+    },
+    {
+      "key": "play_media",
+      "label": {
+        "en": "Play a media",
+        "fr": "Lire un média",
+        "de": "Medium abspielen",
+        "es": "Reproducir un medio"
+      },
+      "description": {
+        "en": "A file, a folder or a stream, by its path or URL as Kodi knows it.",
+        "fr": "Un fichier, un dossier ou un flux, par son chemin ou son URL tel que Kodi le connaît.",
+        "de": "Eine Datei, ein Ordner oder ein Stream, über Pfad oder URL, wie Kodi sie kennt.",
+        "es": "Un archivo, una carpeta o un flujo, por su ruta o URL tal como Kodi la conoce."
+      },
+      "timeout_seconds": 20,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          },
+          "required": true
+        },
+        {
+          "key": "target",
+          "type": "string",
+          "label": {
+            "en": "Path or URL",
+            "fr": "Chemin ou URL",
+            "de": "Pfad oder URL",
+            "es": "Ruta o URL"
+          },
+          "required": true,
+          "placeholder": {
+            "en": "e.g. smb://nas/music/radio.m3u",
+            "fr": "ex. smb://nas/musique/radio.m3u",
+            "de": "z. B. smb://nas/musik/radio.m3u",
+            "es": "p. ej. smb://nas/musica/radio.m3u"
+          }
+        }
+      ]
+    },
+    {
+      "key": "scan_library",
+      "label": {
+        "en": "Update the library",
+        "fr": "Mettre à jour la bibliothèque",
+        "de": "Mediathek aktualisieren",
+        "es": "Actualizar la biblioteca"
+      },
+      "description": {
+        "en": "Kodi looks for new media in its sources.",
+        "fr": "Kodi cherche les nouveaux médias dans ses sources.",
+        "de": "Kodi sucht in seinen Quellen nach neuen Medien.",
+        "es": "Kodi busca nuevos medios en sus fuentes."
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          },
+          "required": true
+        },
+        {
+          "key": "library",
+          "type": "select",
+          "label": {
+            "en": "Library",
+            "fr": "Bibliothèque",
+            "de": "Mediathek",
+            "es": "Biblioteca"
+          },
+          "required": true,
+          "default": "video",
+          "options": [
+            {
+              "value": "video",
+              "label": {
+                "en": "Videos",
+                "fr": "Vidéos",
+                "de": "Videos",
+                "es": "Vídeos"
+              }
+            },
+            {
+              "value": "audio",
+              "label": {
+                "en": "Music",
+                "fr": "Musique",
+                "de": "Musik",
+                "es": "Música"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "get_status",
+      "label": {
+        "en": "Read what Kodi plays",
+        "fr": "Lire l'état de Kodi",
+        "de": "Kodi-Status lesen",
+        "es": "Leer el estado de Kodi"
+      },
+      "description": {
+        "en": "For the next steps: \"only continue if\" Kodi plays nothing, a movie...",
+        "fr": "Pour les étapes suivantes : « continuer seulement si » Kodi ne lit rien, lit un film…",
+        "de": "Für die nächsten Schritte: „nur fortfahren, wenn“ Kodi nichts oder einen Film abspielt…",
+        "es": "Para los pasos siguientes: «continuar solo si» Kodi no reproduce nada, una película…"
+      },
+      "timeout_seconds": 15,
+      "fields": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          },
           "required": true
         }
       ],
       "outputs": [
         {
-          "key": "signalled",
+          "key": "state",
+          "type": "string",
+          "label": {
+            "en": "State (off, stopped, playing, paused)",
+            "fr": "État (off, stopped, playing, paused)",
+            "de": "Status (off, stopped, playing, paused)",
+            "es": "Estado (off, stopped, playing, paused)"
+          }
+        },
+        {
+          "key": "title",
+          "type": "string",
+          "label": {
+            "en": "Title",
+            "fr": "Titre",
+            "de": "Titel",
+            "es": "Título"
+          }
+        },
+        {
+          "key": "media_type",
+          "type": "string",
+          "label": {
+            "en": "Media type (key)",
+            "fr": "Type de média (clé)",
+            "de": "Medientyp (Schlüssel)",
+            "es": "Tipo de medio (clave)"
+          }
+        },
+        {
+          "key": "progress",
+          "type": "number",
+          "label": {
+            "en": "Progress (%)",
+            "fr": "Progression (%)",
+            "de": "Fortschritt (%)",
+            "es": "Progreso (%)"
+          }
+        },
+        {
+          "key": "minutes_left",
+          "type": "number",
+          "label": {
+            "en": "Minutes left",
+            "fr": "Minutes restantes",
+            "de": "Restminuten",
+            "es": "Minutos restantes"
+          }
+        },
+        {
+          "key": "volume",
+          "type": "number",
+          "label": {
+            "en": "Volume",
+            "fr": "Volume",
+            "de": "Lautstärke",
+            "es": "Volumen"
+          }
+        },
+        {
+          "key": "muted",
           "type": "boolean",
-          "label": { "en": "Device signalled", "fr": "Appareil signalé" }
+          "label": {
+            "en": "Muted",
+            "fr": "Son coupé",
+            "de": "Stumm",
+            "es": "Silenciado"
+          }
         }
       ]
     }
   ],
   "widgets": [
     {
-      "key": "demo_status",
-      "label": { "en": "Demo status", "fr": "État de la démo" },
-      "description": {
-        "en": "Live temperature and plug power, plug connection and observed location.",
-        "fr": "Température et puissance en direct, connexion de la prise, position observée."
+      "key": "player",
+      "label": {
+        "en": "Kodi",
+        "fr": "Kodi",
+        "de": "Kodi",
+        "es": "Kodi"
       },
-      "icon": "activity",
-      "action_timeout_seconds": 15
+      "description": {
+        "en": "What plays with its artwork, position, end time, and playback and volume buttons.",
+        "fr": "La lecture en cours avec sa pochette, la position, l'heure de fin, et les boutons.",
+        "de": "Die Wiedergabe mit Cover, Position, Endzeit sowie Wiedergabe- und Lautstärketasten.",
+        "es": "Lo que se reproduce con su carátula, posición, hora de fin y botones de control."
+      },
+      "icon": "film",
+      "action_timeout_seconds": 15,
+      "settings": [
+        {
+          "key": "device",
+          "type": "select",
+          "source": "devices",
+          "label": {
+            "en": "Kodi",
+            "fr": "Kodi",
+            "de": "Kodi",
+            "es": "Kodi"
+          },
+          "required": true
+        }
+      ]
     }
   ]
 }

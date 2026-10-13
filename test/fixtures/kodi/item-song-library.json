@@ -1,0 +1,19 @@
+{
+  "id": 20,
+  "jsonrpc": "2.0",
+  "result": {
+    "item": {
+      "album": "Test Album",
+      "art": {
+        "album.thumb": "image://%2fmedia%2fmusic%2fTest%20Artist%2fTest%20Album%2ffolder.jpg/"
+      },
+      "artist": ["Test Artist"],
+      "file": "/media/music/Test Artist/Test Album/01 Test Song.mp3",
+      "id": 1,
+      "label": "Test Song",
+      "title": "Test Song",
+      "type": "song",
+      "year": 0
+    }
+  }
+}

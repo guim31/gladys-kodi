@@ -1,61 +1,155 @@
-# Demo Devices Template
+# Kodi
 
-This is the user documentation of the integration. Gladys re-hosts this file
-and shows a permanent **Documentation** link to it in the Configuration screen
-(in the user's language, with English as the fallback) — it is when
-configuring that the user needs it most. Keep the short onboarding hints in
-the `section` blocks of the manifest `config_schema`; put the long
-step-by-step (screenshots, troubleshooting…) here.
+Follow and control [Kodi](https://kodi.tv), the free media center (LibreELEC, OSMC, CoreELEC,
+Kodi on a PC, an Android TV box or an NVIDIA Shield), from Gladys: what plays, its progress, the
+volume, the playback buttons, and scenes that react when a movie starts, pauses or stops.
 
-## What you get
+Everything stays on your local network: the integration talks to Kodi directly, through its
+JSON-RPC interface.
 
-Six demo devices show up after installation: a weather station (real data
-from Open-Meteo), a switch, a dimmable light, a smart plug with power
-metering, a motion sensor and a camera.
+Tested against Kodi 20, 21 and 22 running in Docker, not yet on LibreELEC, OSMC, CoreELEC or an
+Android box: feedback welcome on the Gladys forum.
+
+## Requirements
+
+- Gladys Assistant 5.1 or later.
+- Kodi 19 or later (tested on 20, 21 and 22), on the same local network as Gladys.
+- In Kodi, **Settings → Services → Control**:
+  - **Allow remote control via HTTP**: on. Note the port (8080 by default), the user name
+    (`kodi` by default) and the password, if you set one.
+  - **Allow remote control from applications on other systems**: on. It opens port 9090, through
+    which Kodi tells Gladys in real time what happens. Without it, the integration still works but
+    reads Kodi every 10 seconds.
+- To be found automatically: **Settings → Services → General → Announce services to other
+  systems** on (the default).
+- Give the device running Kodi a fixed IP address (a DHCP reservation in your router).
 
 ## Configuration
 
-1. Open the **Configuration** tab of the integration.
-2. Set the **latitude** and **longitude** the demo weather station should
-   observe (they default to Paris), and pick your temperature unit.
-   The **refresh interval** sets how often the weather station and the
-   plug's power are read: every 5 minutes by default, every minute at most.
-3. Save: the devices appear in the **Discovery** tab, ready to be added.
+1. Install the integration from the Gladys store, then open its **Configuration** tab.
+2. Click **Find Kodi on the network**: each Kodi found takes a free slot (three at most). Reload
+   the page to see their addresses. Or type the address yourself, e.g. `192.168.1.40`, or
+   `192.168.1.40:8081` if the web server of Kodi does not use port 8080.
+3. If Kodi asks for a password, fill in the **User name** (empty means `kodi`) and the
+   **Password** of the slot, then save.
+4. **Test the connection**: one line per Kodi, with its name, its version and what it does.
+5. In the **Discovery** tab, add each Kodi to Gladys.
 
-The **Prefer the local connection** toggle drives the demo plug: it reports
-the channel it actually uses as a badge (local or cloud), with an orange dot
-when it runs degraded (local refused, cloud fallback).
+The **Language** option picks the language of the feature names and of the texts the integration
+creates (French by default). Feature names are set when the device is added.
 
-## Actions
+On its first start without any address, the integration searches the network once by itself.
+A scan from the Discovery tab searches again.
 
-- **Test the weather provider** — performs a live request to Open-Meteo and
-  shows the current temperature and humidity under the button.
-- **Identify a device** — pick one of your devices in the list and it will
-  signal itself (the demo light "blinks" in the logs).
+## The Kodi device
 
-## Scenes
+One device per Kodi, named as Kodi names itself (Settings → Services → General → Device name).
+The slot number is its identity: a Kodi that changes address keeps its device and its history.
 
-The integration adds its own cards to the scene editor (Gladys 5.1 or
-later), under the **Integrations** category:
+| Feature       | Type         | Content                                                   |
+| ------------- | ------------ | --------------------------------------------------------- |
+| Playback      | text         | Playing, Paused, Stopped, Off or unreachable              |
+| Now playing   | text         | `Movie (2024)`, `Show S01E02 – Title`, `Artist – Song`... |
+| Media type    | text         | Movie, TV episode, Music, TV channel, Video, None         |
+| Progress      | percentage   | Position in the media, 0 for a live stream                |
+| Time left     | minutes      | Until the end of the media, 0 for a live stream           |
+| Volume        | slider 0–100 | Kodi's volume, follows the remote                         |
+| Play, Pause   | buttons      | Resume, pause                                             |
+| Stop          | button       | Stops playback                                            |
+| Previous/Next | buttons      | Previous or next item of the playlist                     |
+| Mute          | button       | Mutes or unmutes                                          |
 
-- **Motion detected** (trigger) — starts the scene when a demo motion sensor
-  sees something move. Optionally pick the sensor and what moved (person,
-  animal); left empty, any detection matches. The following actions can
-  read what moved with `{{triggerEvent.data.target}}`.
-- **Identify a device** (action) — makes the chosen device signal itself.
-  It returns whether the device could signal itself, so the following
-  actions can depend on it.
+"Video" is what Kodi plays outside its library: a file opened from a folder, a stream, an
+add-on. Movies and episodes of the library are "Movie" and "TV episode".
 
-## Dashboard
+Kodi reports its changes in real time (port 9090); while something plays, the progress is read
+every 10 seconds. With port 9090 closed, everything is read every 10 seconds over HTTP.
 
-Add the **Demo status** widget to a dashboard: it shows the live
-temperature of the weather station and the power of the office plug, the
-connection the plug currently uses (orange when degraded) and the observed
-location. Its **Identify the light** button makes the demo light signal
-itself.
+## Dashboard widget
+
+The **Kodi** widget (choose the Kodi in its settings) shows the artwork of what plays (when it
+comes from the library), the title, the media type, the state, the position, the end time and the
+volume. Its buttons follow the media: play/pause, then stop (video) or next (music), and volume
+down / up by 5 %.
+
+Without artwork, a progress gauge takes its place once the device is added to Gladys.
+
+## Scene triggers
+
+| Trigger          | When                                                                |
+| ---------------- | ------------------------------------------------------------------- |
+| Playback started | Kodi starts a media after nothing played, or the next one of a list |
+| Playback paused  | Kodi pauses                                                         |
+| Playback resumed | Kodi resumes after a pause                                          |
+| Playback stopped | Playback stops or reaches its end, and nothing follows              |
+
+Each trigger can be limited to one Kodi and to some media types (movie, TV episode, music, TV
+channel, other video). Variables for the next steps: **Title**, **Media type**, **Kodi name**,
+and for a stop, **Reached the end**.
+
+Between two episodes of a playlist, Kodi stops then starts again within a tenth of a second: the
+integration waits 1.5 seconds before saying "stopped", so the next episode is a "started" and
+the lights do not flash.
+
+The triggers follow what Kodi really does, whatever started it: the remote, the widget or a
+scene action. Nothing fires for what was already playing when the integration started, nor when
+Kodi is turned off.
+
+## Scene actions
+
+| Action                      | What it does                                                      |
+| --------------------------- | ----------------------------------------------------------------- |
+| Control the playback        | Play, pause, play/pause, stop, next, previous                     |
+| Set the volume              | Volume from 0 to 100                                              |
+| Mute or unmute              | Mute, unmute or toggle                                            |
+| Show a notification on Kodi | A message with a title in the corner of the screen                |
+| Play a media                | A file, a folder or a stream, by its path or URL as Kodi knows it |
+| Update the library          | Kodi scans its video or music sources for new media               |
+| Read what Kodi plays        | State, title, media type, progress, minutes left, volume          |
+
+"Control the playback" returns **Applied**: false when nothing was playing, without failing the
+scene. "Read what Kodi plays" gives the next steps what they need for an "only continue if"
+condition: state (`off`, `stopped`, `playing`, `paused`), media type (`movie`, `episode`, `music`,
+`tv`, `video`)...
+
+## Scene examples
+
+- **Movie night**: trigger "Playback started" on the living room Kodi, media type Movie and Other
+  video → dim the living room lights to 10 %. Trigger "Playback paused" → lights to 50 %.
+  Trigger "Playback resumed" → back to 10 %. Trigger "Playback stopped" → lights to 100 %.
+- **Doorbell**: when the doorbell rings → "Show a notification on Kodi" ("Someone at the door")
+  and "Control the playback: pause".
+- **Bedtime**: at 11:30 pm → "Read what Kodi plays", only continue if the state is `stopped` →
+  turn off the TV plug.
+- **New downloads**: when your download box says it finished → "Update the library" (videos).
+
+Do not start a playback from a "Playback started" scene: it would start itself again and again.
 
 ## Troubleshooting
 
-The integration logs everything it does: check the integration logs from the
-Gladys UI (or `docker logs` on the host) with `LOG_LEVEL=debug` for the full
-detail.
+- **"no answer (turned off, or remote control disabled)"**: Kodi is off, or "Allow remote control
+  via HTTP" is off, or the address or port is wrong. Open `http://<address>:8080` in a browser:
+  Kodi's web interface (or its login prompt) must appear.
+- **"user name or password refused"**: check the user name and password of Settings → Services →
+  Control. An empty user name means `kodi`.
+- **"password refused by the web server, no artwork"**: everything works through port 9090, but
+  the artwork comes through the web server: fix the password.
+- **"Test the connection" says "no live updates"**: turn on "Allow remote control from
+  applications on other systems". Kodi's port 9090 cannot be changed from its menus.
+- **Nothing found on the network**: turn on "Announce services to other systems", or type the
+  address. The search needs Gladys on the same network as Kodi (Docker in host network mode,
+  the usual setup).
+- **No artwork in the widget**: Kodi only serves the artwork of its library; a file opened from a
+  folder has none. An image over 300 KB is not shown either.
+- **"Update the library" does nothing**: Kodi only scans the sources whose content type is set
+  (Videos → Files → the source → Set content).
+
+## Limits
+
+- Three Kodi at most.
+- The WebSocket port is 9090 (Kodi's default, only changed in `advancedsettings.xml`).
+- No power on/off: Kodi cannot be woken up through its interface. A Kodi turned off shows "Off or
+  unreachable" and fires no trigger.
+- Pictures (slideshows) are ignored; when music plays behind a video, the video wins.
+- The artwork is shown when Kodi serves it under 300 KB (Kodi caches posters at 720 px).
+- Not affiliated with the Kodi Foundation (XBMC Foundation), owner of the Kodi trademark.
