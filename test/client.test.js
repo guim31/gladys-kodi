@@ -3,7 +3,7 @@
 // images) and over the WebSocket (calls, notifications, reconnection, ping).
 // -----------------------------------------------------------------------------
 
-import { test } from 'node:test';
+import { after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { KodiError, KodiHttp } from '../src/kodi/http.js';
 import { KodiSocket } from '../src/kodi/socket.js';
@@ -79,6 +79,11 @@ test('HTTP: images of the texture cache, refused beyond the limit', async () => 
   });
   await assert.rejects(httpOf(kodi).image('image://unknown/', 1000), { kind: 'http', status: 404 });
 });
+
+// The socket's timers are unref'd (they must never keep the integration
+// alive): this keeps the test process running while they are awaited.
+const keepAlive = setInterval(() => {}, 1000);
+after(() => clearInterval(keepAlive));
 
 const FAST = {
   reconnectMin: 10,
