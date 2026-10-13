@@ -10,6 +10,8 @@ the notes of the version's GitHub Release.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-13
+
 ### Added
 
 - One Gladys device per Kodi, up to three: playback state, what is playing
@@ -35,4 +37,5 @@ the notes of the version's GitHub Release.
   needs attention (no answer, password refused, artwork unavailable).
 - English, French, German and Spanish texts and documentation.
 
-[Unreleased]: https://github.com/guim31/gladys-kodi/commits/main
+[Unreleased]: https://github.com/guim31/gladys-kodi/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/guim31/gladys-kodi/releases/tag/v1.0.0
