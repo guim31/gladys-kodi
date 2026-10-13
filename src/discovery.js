@@ -9,6 +9,7 @@
 // stays the identity of the device, typed or found.
 // -----------------------------------------------------------------------------
 
+import { lookup } from 'node:dns/promises';
 import { parseMdnsTxt } from '@gladysassistant/integration-sdk';
 import { DEFAULT_HTTP_PORT, freeSlots, hostKey, normalizeAddress } from './config.js';
 
@@ -53,34 +54,68 @@ export function addressOf(kodi) {
   return port === DEFAULT_HTTP_PORT ? kodi.address : `${kodi.address}:${port}`;
 }
 
-/**
- * Put the Kodi instances found in the free slots of the configuration.
- * @param {object} rawConfig the configuration as Gladys stores it
- * @param {Array} found parseKodiEntries()
- * @returns {{ updates: Record<string, string>, added: object[], known: object[], full: object[] }}
- */
-export function planSlots(rawConfig, found) {
-  const taken = new Set();
+/** The hosts typed in the address fields (a name or an IP address). */
+export function typedHosts(rawConfig) {
+  const hosts = [];
   for (const [key, value] of Object.entries(rawConfig ?? {})) {
     if (/^host_\d+$/.test(key)) {
       const address = normalizeAddress(value);
       if (address) {
-        taken.add(address.httpUrl);
+        hosts.push(address.host);
       }
     }
   }
+  return hosts;
+}
+
+/**
+ * The IPv4 addresses of the typed host names, so that a Kodi typed as
+ * `salon.lan` is recognized when mDNS finds it as 192.0.2.20. A name that
+ * does not resolve is left out.
+ * @param {string[]} hosts
+ * @param {(host: string) => Promise<string[]>} [resolve]
+ */
+export async function resolveHosts(hosts, resolve = lookupIpv4) {
+  const addresses = [];
+  for (const host of hosts) {
+    if (IPV4.test(host)) {
+      continue;
+    }
+    try {
+      addresses.push(...(await resolve(host)));
+    } catch {
+      // unknown name: compared as typed only
+    }
+  }
+  return addresses;
+}
+
+async function lookupIpv4(host) {
+  const results = await Promise.race([
+    lookup(host, { all: true, family: 4 }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2000).unref?.()),
+  ]);
+  return results.map((result) => result.address);
+}
+
+/**
+ * Put the Kodi instances found in the free slots of the configuration. A
+ * Kodi is known by its host: an address typed with another port or scheme,
+ * or a name resolving to it (`aliases`), is the same Kodi.
+ * @param {object} rawConfig the configuration as Gladys stores it
+ * @param {Array} found parseKodiEntries()
+ * @param {string[]} [aliases] resolveHosts() of the typed names
+ * @returns {{ updates: Record<string, string>, added: object[], known: object[], full: object[] }}
+ */
+export function planSlots(rawConfig, found, aliases = []) {
+  const taken = new Set([...typedHosts(rawConfig), ...aliases].map((host) => host.toLowerCase()));
   const free = freeSlots(rawConfig);
   const updates = {};
   const added = [];
   const known = [];
   const full = [];
   for (const kodi of found) {
-    const typed = addressOf(kodi);
-    const url = normalizeAddress(typed)?.httpUrl;
-    if (!url) {
-      continue;
-    }
-    if (taken.has(url)) {
+    if (taken.has(kodi.address)) {
       known.push(kodi);
       continue;
     }
@@ -89,8 +124,8 @@ export function planSlots(rawConfig, found) {
       full.push(kodi);
       continue;
     }
-    updates[hostKey(slot)] = typed;
-    taken.add(url);
+    updates[hostKey(slot)] = addressOf(kodi);
+    taken.add(kodi.address);
     added.push({ ...kodi, slot });
   }
   return { updates, added, known, full };

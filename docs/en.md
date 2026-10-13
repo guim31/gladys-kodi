@@ -7,13 +7,13 @@ volume, the playback buttons, and scenes that react when a movie starts, pauses 
 Everything stays on your local network: the integration talks to Kodi directly, through its
 JSON-RPC interface.
 
-Tested against Kodi 20, 21 and 22 running in Docker, not yet on LibreELEC, OSMC, CoreELEC or an
+Tested against Kodi 20 and 21 running in Docker, not yet on LibreELEC, OSMC, CoreELEC or an
 Android box: feedback welcome on the Gladys forum.
 
 ## Requirements
 
 - Gladys Assistant 5.1 or later.
-- Kodi 19 or later (tested on 20, 21 and 22), on the same local network as Gladys.
+- Kodi 19 or later (tested on 20 and 21), on the same local network as Gladys.
 - In Kodi, **Settings → Services → Control**:
   - **Allow remote control via HTTP**: on. Note the port (8080 by default), the user name
     (`kodi` by default) and the password, if you set one.

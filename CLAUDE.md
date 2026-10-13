@@ -226,9 +226,9 @@ long, et sur un « Sie »/« Ihr… » de politesse en allemand. Le store exige 
 ## Kodi (appris sur cette intégration)
 
 Faits vérifiés sur un vrai Kodi 20.1 (paquet Debian bookworm dans Docker, X11 sur Xvfb, carte son
-PulseAudio muette : lecture réelle) et sur Kodi 21.3 et 22 (images `matthuisman/kodi-headless`,
-qui ne lisent rien : un fichier vidéo y fait planter Kodi, un audio reste bloqué sans notification).
-Réponses enregistrées dans `test/fixtures/kodi/`.
+PulseAudio muette : lecture réelle) et sur Kodi 21.3 (image `matthuisman/kodi-headless:Omega`, qui ne lit rien : un fichier vidéo y fait
+planter Kodi, un audio reste bloqué sans notification). L'image `:Piers` (Kodi 22) ne démarre pas
+(« Unable to Initialize ») : Kodi 22 n'est pas vérifié. Réponses enregistrées dans `test/fixtures/kodi/`.
 
 - **Deux portes** : `POST /jsonrpc` sur le serveur web (8080, Basic auth, 401 sans le bon mot de
   passe ; utilisateur `kodi` par défaut) et le WebSocket `ws://<hôte>:9090/jsonrpc`, **sans
@@ -262,6 +262,8 @@ Réponses enregistrées dans `test/fixtures/kodi/`.
 - `AudioLibrary.Scan` sans `directory` ne fait rien sur un profil neuf dont les sources n'ont pas
   encore de type de contenu ; avec `directory`, si. L'action de scène reste sans répertoire (le cas
   réel : des sources déjà configurées).
+- **Temps restant** : les durées de Kodi ont des millisecondes (10:00.042) : arrondir au-dessus
+  après avoir retiré une demi-seconde, sinon « 11 min » au début d'un film de 10 min.
 - **Pièges Gladys rencontrés** : la catégorie `music` (play, pause, next…) a une boîte « Musique »
   au tableau de bord, mais ses types n'ont **aucun composant de ligne** dans la boîte « Appareils
   d'une pièce » (affichés comme des nombres) ; la catégorie `television` est rendue en boutons de

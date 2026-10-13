@@ -8,13 +8,13 @@ démarre, se met en pause ou s'arrête.
 Tout reste sur votre réseau local : l'intégration parle directement à Kodi, par son interface
 JSON-RPC.
 
-Testée avec Kodi 20, 21 et 22 dans Docker, pas encore sur LibreELEC, OSMC, CoreELEC ou une box
+Testée avec Kodi 20 et 21 dans Docker, pas encore sur LibreELEC, OSMC, CoreELEC ou une box
 Android : vos retours sont les bienvenus sur le forum de Gladys.
 
 ## Prérequis
 
 - Gladys Assistant 5.1 ou plus récent.
-- Kodi 19 ou plus récent (testé sur 20, 21 et 22), sur le même réseau local que Gladys.
+- Kodi 19 ou plus récent (testé sur 20 et 21), sur le même réseau local que Gladys.
 - Dans Kodi, **Paramètres → Services → Contrôle** :
   - **Autoriser le contrôle à distance via HTTP** : activé. Notez le port (8080 par défaut), le
     nom d'utilisateur (`kodi` par défaut) et le mot de passe, si vous en avez mis un.

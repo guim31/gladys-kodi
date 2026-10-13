@@ -68,6 +68,8 @@ export async function createWorld({
     createSocket: net.createSocket,
     timings,
     socketTimings: FAST_SOCKET,
+    // Tests never touch the network: host names resolve here.
+    resolve: async (host) => (host === 'salon.lan' ? ['192.0.2.20'] : []),
     now,
   });
   if (connect) {

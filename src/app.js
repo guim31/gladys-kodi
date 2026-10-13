@@ -17,7 +17,7 @@ const logger = createLogger({ name: 'kodi-app' });
 /**
  * @param {object} gladys GladysIntegration instance
  * @param {object} [options] test seams: store, fetch, createSocket, timings,
- *   socketTimings, now
+ *   socketTimings, resolve (host names -> IPv4), now
  */
 export function registerHandlers(gladys, options = {}) {
   const hub = new Hub({
@@ -27,6 +27,7 @@ export function registerHandlers(gladys, options = {}) {
     createSocket: options.createSocket,
     timings: options.timings,
     socketTimings: options.socketTimings,
+    resolve: options.resolve,
     now: options.now,
   });
 

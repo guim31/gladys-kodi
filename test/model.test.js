@@ -143,6 +143,7 @@ test('a live stream has no progress nor time left', () => {
   assert.equal(minutesLeftOf(live), 0);
   assert.equal(toSeconds({ hours: 1, minutes: 2, seconds: 3, milliseconds: 500 }), 3723.5);
   assert.equal(toSeconds(null), null);
+  assert.equal(toSeconds({ hours: 0, minutes: 0, seconds: 0, milliseconds: -480 }), 0);
 });
 
 const snap = (state, identity = 'movie:1', extra = {}) => ({

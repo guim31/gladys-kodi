@@ -153,10 +153,13 @@ export class KodiInstance extends EventEmitter {
       try {
         return await this.socket.call(method, params);
       } catch (err) {
-        if (err.kind !== 'unreachable') {
+        // A slow answer on a live socket (Kodi busy scanning its library) is
+        // not a reason to try HTTP: its password may be wrong on purpose
+        // (artwork only), which would turn a delay into "password refused".
+        if (err.kind !== 'unreachable' || this.socket.live) {
           throw err;
         }
-        // The socket is dying: HTTP may still answer.
+        // The socket died during the call: HTTP may still answer.
       }
     }
     return this.http.call(method, params);
@@ -175,6 +178,13 @@ export class KodiInstance extends EventEmitter {
       this.refresh().catch(() => {});
     }, delay);
     this.notifyTimer.unref?.();
+  }
+
+  /** A read soon, unless one is already scheduled (a stop grace included). */
+  #refreshSoon() {
+    if (!this.notifyTimer) {
+      this.requestRefresh();
+    }
   }
 
   #onNotification(method, data) {
@@ -348,8 +358,9 @@ export class KodiInstance extends EventEmitter {
       });
     } catch (err) {
       if (err.kind === 'rpc') {
-        // The player is gone: read everything.
-        await this.refresh();
+        // The player is gone: read everything, through requestRefresh so that
+        // a pending stop grace (next item of a playlist) is kept.
+        this.#refreshSoon();
       }
       return;
     }
@@ -358,7 +369,7 @@ export class KodiInstance extends EventEmitter {
     }
     const state = properties.speed === 0 ? 'paused' : 'playing';
     if (state !== this.snapshot.state) {
-      await this.refresh();
+      this.#refreshSoon();
       return;
     }
     const total = toSeconds(properties.totaltime);
@@ -379,6 +390,12 @@ export class KodiInstance extends EventEmitter {
       return;
     }
     const message = err?.message ?? String(err);
+    if (this.socket.live) {
+      // The WebSocket still answers its pings: Kodi is there, only slow.
+      // The next notification or tick reads again.
+      logger.debug(`Kodi ${this.slot}: ${message}`);
+      return;
+    }
     if (message !== this.lastError) {
       logger.warn(`Kodi ${this.slot}: ${message}`);
     }
@@ -438,7 +455,7 @@ export class KodiInstance extends EventEmitter {
       return;
     }
     try {
-      if (!this.socket.live || !this.known) {
+      if (!this.socket.live || !this.known || !this.reachable) {
         await this.refresh();
       } else if (this.snapshot.state === 'playing') {
         await this.#readProgress();

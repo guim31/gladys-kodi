@@ -136,3 +136,23 @@ test('a scan from the Discovery tab also searches the network', async (t) => {
   assert.equal(world.gladys.fake.config.host_1, '192.0.2.21:8081');
   assert.equal(world.gladys.fake.discoveredDevices.length, 1);
 });
+
+test('a Kodi typed by name, port or scheme is not added a second time', () => {
+  const found = parseKodiEntries(livingRoom);
+  assert.deepEqual(planSlots({ host_1: 'salon.lan' }, found, ['192.0.2.20']).updates, {});
+  assert.deepEqual(planSlots({ host_1: 'https://192.0.2.20' }, found).updates, {});
+  assert.deepEqual(planSlots({ host_1: '192.0.2.20:8081' }, found).updates, {});
+  assert.deepEqual(planSlots({ host_1: 'salon.lan' }, found).updates, { host_2: '192.0.2.20' });
+});
+
+test('the search resolves the typed names before comparing', async (t) => {
+  const world = await createWorld({
+    kodis: [new FakeKodi({ host: '192.0.2.20' })],
+    config: { host_1: 'salon.lan' },
+    scanResults: { mdns: livingRoom },
+  });
+  t.after(() => world.app.stop());
+  const ack = await world.gladys.fake.action('find_kodi', {});
+  assert.match(JSON.stringify(ack.data), /Already configured/);
+  assert.equal(world.gladys.fake.config.host_2, undefined);
+});

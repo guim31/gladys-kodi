@@ -37,14 +37,17 @@ const ART_ORDER = {
 const MEDIA_EXTENSION =
   /\.(mkv|mp4|m4v|avi|mov|wmv|mpg|mpeg|ts|m2ts|webm|iso|flv|ogv|mp3|flac|m4a|aac|ogg|opus|wav|wma|ape|alac)$/i;
 
-/** `{ hours, minutes, seconds, milliseconds }` -> seconds (null when absent). */
+/**
+ * `{ hours, minutes, seconds, milliseconds }` -> seconds (null when absent),
+ * never negative.
+ */
 export function toSeconds(time) {
   if (!time || typeof time !== 'object') {
     return null;
   }
   const { hours = 0, minutes = 0, seconds = 0, milliseconds = 0 } = time;
   const total = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000;
-  return Number.isFinite(total) ? total : null;
+  return Number.isFinite(total) ? Math.max(0, total) : null;
 }
 
 /**
@@ -245,7 +248,9 @@ export function minutesLeftOf(snapshot) {
   if (!ACTIVE_STATES.has(snapshot.state) || snapshot.total === null || snapshot.time === null) {
     return 0;
   }
-  return Math.ceil(Math.max(0, snapshot.total - snapshot.time) / 60);
+  // Rounded up (20 s left is still "1 min"), less half a second: Kodi gives
+  // durations like 10:00.042, which are "10 min" at the start.
+  return Math.max(0, Math.ceil((snapshot.total - snapshot.time - 0.5) / 60));
 }
 
 /**

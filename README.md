@@ -11,8 +11,8 @@ notifications, its web server for the rest. No cloud, no account.
 > package, in Docker with a virtual display and a silent sound card): a video
 > file, a song of the music library, pause, resume, volume, mute, seek, stop, the
 > end of a media and of a playlist, the web server password, the artwork. The
-> calls and the WebSocket were also checked on Kodi 21.3 and 22 (headless
-> images, which cannot play). Please report what works and what does not in the
+> calls and the WebSocket were also checked on Kodi 21.3 (a headless
+> image, which cannot play). Please report what works and what does not in the
 > [issues](https://github.com/guim31/gladys-kodi/issues).
 
 ## Features

@@ -8,7 +8,7 @@ import { createHash } from 'node:crypto';
 import { createLogger } from '@gladysassistant/integration-sdk';
 import { SLOTS, normalizeConfig } from './config.js';
 import { BUTTONS, buildDevice, buildStates, deviceIds, featureKeyOf, slotOf } from './devices.js';
-import { addressOf, parseKodiEntries, planSlots } from './discovery.js';
+import { addressOf, parseKodiEntries, planSlots, resolveHosts, typedHosts } from './discovery.js';
 import { CommandRefused, KodiInstance } from './instance.js';
 import { KodiError } from './kodi/http.js';
 import {
@@ -70,7 +70,17 @@ export function imageType(bytes) {
 }
 
 export class Hub {
-  constructor({ gladys, store, fetch, createSocket, timings, socketTimings, now = Date.now }) {
+  constructor({
+    gladys,
+    store,
+    fetch,
+    createSocket,
+    timings,
+    socketTimings,
+    resolve,
+    now = Date.now,
+  }) {
+    this.resolve = resolve;
     this.gladys = gladys;
     this.store = store;
     this.fetch = fetch;
@@ -83,8 +93,9 @@ export class Hub {
     // slot -> { slot, settings, kodi }
     this.instances = new Map();
     this.saved = { names: {} };
-    // url -> { key, base64 } | { failed: true }; key -> url
+    // url -> { key, base64 }; key -> url; urls Kodi did not serve
     this.artwork = new Map();
+    this.artworkFailures = new Set();
     this.artworkKeys = new Map();
     this.lastStatus = '';
     this.widgetRefreshAt = 0;
@@ -356,11 +367,10 @@ export class Hub {
    */
   async #prefetchArtwork(entry, urls) {
     for (const url of urls) {
-      const known = this.artwork.get(url);
-      if (known?.key) {
+      if (this.artwork.get(url)?.key) {
         return;
       }
-      if (known?.failed) {
+      if (this.artworkFailures.has(url)) {
         continue;
       }
       try {
@@ -378,7 +388,10 @@ export class Hub {
       } catch (err) {
         logger.debug(`Kodi ${entry.slot}: no artwork from ${url} (${err.message})`);
         // A temporary failure (Kodi busy) is retried with the next item only.
-        this.#rememberArtwork(url, { failed: true });
+        if (this.artworkFailures.size >= 200) {
+          this.artworkFailures.clear();
+        }
+        this.artworkFailures.add(url);
       }
     }
   }
@@ -386,11 +399,15 @@ export class Hub {
   #rememberArtwork(url, value) {
     this.artwork.delete(url);
     this.artwork.set(url, value);
-    // A few covers are enough: the current item of three Kodi, and recent ones.
-    while (this.artwork.size > 12) {
-      const [oldest, entry] = this.artwork.entries().next().value;
-      this.artwork.delete(oldest);
-      if (entry.key) {
+    // A few covers are enough: the current item of three Kodi, and recent
+    // ones. What a Kodi still plays is never dropped.
+    const playing = new Set([...this.instances.values()].flatMap((e) => e.kodi.snapshot.art));
+    for (const [oldest, entry] of this.artwork) {
+      if (this.artwork.size <= 12) {
+        break;
+      }
+      if (!playing.has(oldest)) {
+        this.artwork.delete(oldest);
         this.artworkKeys.delete(entry.key);
       }
     }
@@ -566,7 +583,8 @@ export class Hub {
     if (found.length === 0) {
       return discoveryText('none');
     }
-    const plan = planSlots(this.rawConfig, found);
+    const aliases = await resolveHosts(typedHosts(this.rawConfig), this.resolve);
+    const plan = planSlots(this.rawConfig, found, aliases);
     if (Object.keys(plan.updates).length > 0) {
       // Validated by Gladys against the schema; no config-updated echo.
       await this.gladys.setConfig(plan.updates);

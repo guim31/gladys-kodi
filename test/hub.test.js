@@ -291,3 +291,54 @@ test('an invalid address is reported, the others still work', async (t) => {
   );
   assert.equal(world.gladys.fake.discoveredDevices.length, 1);
 });
+
+test('a slow answer on a live WebSocket is no "off" nor "password refused"', async (t) => {
+  // Wrong web server password on purpose: everything goes through port 9090.
+  const kodi = new FakeKodi();
+  const world = await withDevice({
+    kodis: [kodi],
+    config: { host_1: kodi.address, password_1: 'wrong' },
+  });
+  t.after(() => world.app.stop());
+  const { gladys } = world;
+  const seen = new Set();
+  const timer = setInterval(() => seen.add(text(gladys, 'state')), 5);
+  t.after(() => clearInterval(timer));
+  kodi.silent = true; // Kodi busy (library scan): no answer for a while
+  kodi.playVideoFile();
+  await settle(400);
+  kodi.silent = false;
+  kodi.pause();
+  await until(() => text(gladys, 'state') === 'En pause', 2000, 'paused');
+  assert.ok(!seen.has('Éteint ou injoignable'), [...seen].join());
+  assert.doesNotMatch(
+    JSON.stringify(gladys.fake.connectionStatuses),
+    /user name or password refused/,
+    'never "password refused" for a slow answer',
+  );
+});
+
+test('a progress read between two playlist items keeps the stop grace', async (t) => {
+  const timings = {
+    pollInterval: 40,
+    progressInterval: 5,
+    offlineInterval: 40,
+    notificationDelay: 5,
+    stopGrace: 150,
+  };
+  const world = await withDevice({ timings });
+  t.after(() => world.app.stop());
+  const { gladys, kodi } = world;
+  kodi.playItem(HA_ITEMS.episode);
+  await until(() => events(gladys).length === 1, 2000, 'first start');
+  await settle(30);
+  kodi.stop(true);
+  await settle(60); // several progress ticks see no player
+  kodi.playItem({ ...HA_ITEMS.episode, id: 3, title: 'Next one', label: 'Next one' });
+  await until(() => events(gladys).length === 2, 2000, 'second start');
+  await settle(200);
+  assert.deepEqual(
+    events(gladys).map(([key]) => key),
+    ['playback_started', 'playback_started'],
+  );
+});

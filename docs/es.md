@@ -8,13 +8,13 @@ una película empieza, se pausa o se detiene.
 Todo se queda en su red local: la integración habla directamente con Kodi, a través de su
 interfaz JSON-RPC.
 
-Probada con Kodi 20, 21 y 22 en Docker, todavía no en LibreELEC, OSMC, CoreELEC ni en un
+Probada con Kodi 20 y 21 en Docker, todavía no en LibreELEC, OSMC, CoreELEC ni en un
 dispositivo Android: sus comentarios son bienvenidos en el foro de Gladys.
 
 ## Requisitos
 
 - Gladys Assistant 5.1 o posterior.
-- Kodi 19 o posterior (probado con 20, 21 y 22), en la misma red local que Gladys.
+- Kodi 19 o posterior (probado con 20 y 21), en la misma red local que Gladys.
 - En Kodi, **Ajustes → Servicios → Control**:
   - **Permitir el control remoto vía HTTP**: activado. Anote el puerto (8080 por defecto), el
     usuario (`kodi` por defecto) y la contraseña, si ha puesto una.
