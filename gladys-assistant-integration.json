@@ -8,8 +8,8 @@
     "de": "Verfolge und steuere Kodi: aktuelle Wiedergabe, Lautstärke, Tasten, Szenen beim Filmstart.",
     "es": "Siga y controle Kodi: lo que se reproduce, volumen, botones, escenas al empezar una película."
   },
-  "version": "1.0.1",
-  "docker_image": "ghcr.io/guim31/gladys-kodi:1.0.1",
+  "version": "1.0.2",
+  "docker_image": "ghcr.io/guim31/gladys-kodi:1.0.2",
   "gladys_version": ">=5.1.0",
   "cover_image": "https://raw.githubusercontent.com/guim31/gladys-kodi/main/cover.png",
   "categories": ["multimedia"],
