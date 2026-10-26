@@ -1,0 +1,49 @@
+{
+  "id": 4,
+  "jsonrpc": "2.0",
+  "result": {
+    "limits": {
+      "end": 3,
+      "start": 0,
+      "total": 3
+    },
+    "songs": [
+      {
+        "album": "First Light",
+        "art": {
+          "album.cover": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fFirst%20Light%2fcover.png/"
+        },
+        "artist": ["Alpha Band"],
+        "duration": 40,
+        "file": "/media/music/Alpha Band/First Light/01 - Dawn.mp3",
+        "label": "Dawn",
+        "songid": 1,
+        "track": 1
+      },
+      {
+        "album": "First Light",
+        "art": {
+          "album.cover": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fFirst%20Light%2fcover.png/"
+        },
+        "artist": ["Alpha Band"],
+        "duration": 40,
+        "file": "/media/music/Alpha Band/First Light/02 - Morning Run.mp3",
+        "label": "Morning Run",
+        "songid": 2,
+        "track": 2
+      },
+      {
+        "album": "First Light",
+        "art": {
+          "album.cover": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fFirst%20Light%2fcover.png/"
+        },
+        "artist": ["Alpha Band"],
+        "duration": 40,
+        "file": "/media/music/Alpha Band/First Light/03 - Noon.mp3",
+        "label": "Noon",
+        "songid": 3,
+        "track": 3
+      }
+    ]
+  }
+}

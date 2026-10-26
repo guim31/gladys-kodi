@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------------
 
 import { createLogger } from '@gladysassistant/integration-sdk';
+import { Catalog } from './catalog.js';
 import { normalizeConfig } from './config.js';
 import { Hub } from './hub.js';
 import { SCENE_ACTIONS } from './scenes.js';
@@ -78,6 +79,9 @@ export function registerHandlers(gladys, options = {}) {
   // changes); this only serves a Gladys that would poll anyway.
   gladys.onPoll(whenReady((device) => hub.poll(device)));
   gladys.onDeviceCreated(whenReady((device) => hub.onDeviceCreated(device)));
+  // "Update" in Discover (the music features of 1.1 on a 1.0 device): the SDK
+  // forgot what it published, the hub publishes everything again.
+  gladys.onDeviceUpdated(whenReady((device) => hub.onDeviceCreated(device)));
   gladys.onConfigUpdated(whenReady((config) => hub.reconfigure(normalizeConfig(config), config)));
 
   gladys.onAction(
@@ -110,8 +114,20 @@ export function registerHandlers(gladys, options = {}) {
   }
   gladys.onWidgetGetImage(whenReady((imageKey) => hub.widgetImage(imageKey)));
 
+  // Gladys 5.3 music player: the catalog panel and the artworks (manifest
+  // `music`). The artworks are read with the credentials of their Kodi, never
+  // by the SDK's default handler.
+  const catalog = new Catalog(hub);
+  gladys.onMusicBrowse(whenReady((device, options) => catalog.browse(device, options)));
+  gladys.onMusicSearch(whenReady((device, options) => catalog.search(device, options)));
+  gladys.onMusicPlay(whenReady((device, media, mode) => catalog.play(device, media, mode)));
+  gladys.onMusicQueueGet(whenReady((device, options) => catalog.queueGet(device, options)));
+  gladys.onMusicQueuePlay(whenReady((device, index) => catalog.queuePlay(device, index)));
+  gladys.onMusicGetArtwork(whenReady((key) => hub.musicArtwork(key)));
+
   return {
     hub,
+    catalog,
     ready,
     stop: () => hub.stop(),
   };

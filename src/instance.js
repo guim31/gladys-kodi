@@ -25,6 +25,7 @@ import {
   choosePlayer,
   emptySnapshot,
   playbackEvents,
+  playerModes,
   readSnapshot,
   toSeconds,
 } from './kodi/model.js';
@@ -42,6 +43,10 @@ export const DEFAULT_TIMINGS = {
   // Notifications come in bursts (OnPlay, OnAVChange, OnAVStart...).
   notificationDelay: 300,
   stopGrace: 1_500,
+  // Over HTTP, how long a command is given before its result is read: Kodi
+  // opens, stops and skips asynchronously (checked on Kodi 21.2: read at
+  // once, a skip shows no player and a stop still shows the old one).
+  commandSettle: 700,
 };
 
 // Notifications that change what the snapshot holds.
@@ -100,6 +105,9 @@ export class KodiInstance extends EventEmitter {
     this.friendlyName = null;
     this.version = null;
     this.lastIdentity = '';
+    // The playlist of the last item played (0 audio, 1 video): what "play"
+    // starts again once Kodi stopped (Kodi keeps the playlist, not the player).
+    this.lastPlaylistId = null;
     this.stopEnded = null;
     this.httpChecked = false;
     this.httpError = undefined;
@@ -378,6 +386,7 @@ export class KodiInstance extends EventEmitter {
       time: toSeconds(properties.time),
       total: total && total > 0 ? total : null,
       percentage: Number.isFinite(properties.percentage) ? properties.percentage : null,
+      ...playerModes(properties),
     });
   }
 
@@ -425,6 +434,9 @@ export class KodiInstance extends EventEmitter {
     // What played when Kodi went away: coming back with it is no new start.
     if (ACTIVE_STATES.has(next.state)) {
       this.lastIdentity = next.identity;
+      if (next.playlistId !== null) {
+        this.lastPlaylistId = next.playlistId;
+      }
     } else if (next.state === 'stopped') {
       this.lastIdentity = '';
     }
@@ -485,11 +497,20 @@ export class KodiInstance extends EventEmitter {
     return player;
   }
 
-  async #afterCommand() {
-    // Over HTTP nothing is pushed: read the result right away.
-    if (!this.socket.live) {
-      await this.refresh();
+  /**
+   * Over HTTP nothing is pushed: read the result once Kodi had a moment, and
+   * once more a little later (a long transition). Over the WebSocket the
+   * notifications do it.
+   */
+  afterCommand() {
+    if (this.socket.live || !this.running) {
+      return;
     }
+    // Not awaited: the command is acknowledged at once (Gladys waits 5 s for
+    // a set-value), the reads follow.
+    this.requestRefresh(this.timings.commandSettle);
+    const later = setTimeout(() => this.requestRefresh(0), this.timings.commandSettle * 3);
+    later.unref?.();
   }
 
   /**
@@ -519,7 +540,76 @@ export class KodiInstance extends EventEmitter {
       default:
         throw new Error(`Unknown playback command ${command}`);
     }
-    await this.#afterCommand();
+    await this.afterCommand();
+  }
+
+  /**
+   * The playback state written from Gladys 5.3 (MUSIC_PLAYBACK_STATE): 0
+   * pause, 1 play, 2 stop. Play with nothing playing starts the playlist
+   * Kodi kept (the last one played, else the music one, else the video one).
+   */
+  async setPlaybackState(value) {
+    if (value === 2) {
+      const player = choosePlayer(await this.call('Player.GetActivePlayers'));
+      if (player) {
+        await this.call('Player.Stop', { playerid: player.playerid });
+        await this.afterCommand();
+      }
+      return;
+    }
+    const player = choosePlayer(await this.call('Player.GetActivePlayers'));
+    if (player) {
+      await this.call('Player.PlayPause', { playerid: player.playerid, play: value === 1 });
+      await this.afterCommand();
+      return;
+    }
+    if (value === 0) {
+      return; // nothing plays: already "not playing"
+    }
+    const order = [...new Set([this.lastPlaylistId, 0, 1].filter((id) => id !== null))];
+    for (const playlistid of order) {
+      const items = await this.call('Playlist.GetItems', {
+        playlistid,
+        limits: { start: 0, end: 1 },
+      });
+      if ((items?.limits?.total ?? 0) > 0) {
+        await this.call('Player.Open', { item: { playlistid, position: 0 } });
+        await this.afterCommand();
+        return;
+      }
+    }
+    throw new CommandRefused('empty_queue');
+  }
+
+  /** Seek to a position in seconds (absolute: `{ seconds }` would be relative). */
+  async seek(seconds) {
+    const player = await this.#player();
+    const whole = Math.max(0, Math.floor(seconds));
+    await this.call('Player.Seek', {
+      playerid: player.playerid,
+      value: {
+        time: {
+          hours: Math.floor(whole / 3600),
+          minutes: Math.floor((whole % 3600) / 60),
+          seconds: whole % 60,
+          milliseconds: 0,
+        },
+      },
+    });
+    await this.afterCommand();
+  }
+
+  async setShuffle(shuffle) {
+    const player = await this.#player();
+    await this.call('Player.SetShuffle', { playerid: player.playerid, shuffle });
+    await this.afterCommand();
+  }
+
+  /** @param {'off'|'all'|'one'} repeat */
+  async setRepeat(repeat) {
+    const player = await this.#player();
+    await this.call('Player.SetRepeat', { playerid: player.playerid, repeat });
+    await this.afterCommand();
   }
 
   async setVolume(volume) {
@@ -551,7 +641,7 @@ export class KodiInstance extends EventEmitter {
 
   async open(target) {
     await this.call('Player.Open', { item: { file: target } });
-    await this.#afterCommand();
+    await this.afterCommand();
   }
 
   /** @param {'video'|'audio'} library */
@@ -592,6 +682,14 @@ function sameSnapshot(a, b) {
     a.percentage === b.percentage &&
     a.volume === b.volume &&
     a.muted === b.muted &&
-    a.art.join('|') === b.art.join('|')
+    a.art.join('|') === b.art.join('|') &&
+    a.music.title === b.music.title &&
+    a.music.artist === b.music.artist &&
+    a.music.album === b.music.album &&
+    a.music.season === b.music.season &&
+    a.shuffled === b.shuffled &&
+    a.repeat === b.repeat &&
+    a.playlistId === b.playlistId &&
+    a.position === b.position
   );
 }

@@ -11,7 +11,18 @@ export const ACTIVE_STATES = new Set(['playing', 'paused']);
 /** What is playing, as the scene filters and variables name it. */
 export const MEDIA_TYPES = ['movie', 'episode', 'music', 'tv', 'video'];
 
-export const PLAYER_PROPERTIES = ['speed', 'time', 'totaltime', 'percentage', 'live'];
+export const PLAYER_PROPERTIES = [
+  'speed',
+  'time',
+  'totaltime',
+  'percentage',
+  'live',
+  // Gladys 5.3 music player: modes of the player, and its playlist (queue).
+  'shuffled',
+  'repeat',
+  'playlistid',
+  'position',
+];
 export const ITEM_PROPERTIES = [
   'title',
   'year',
@@ -28,11 +39,25 @@ export const ITEM_PROPERTIES = [
 export const APPLICATION_PROPERTIES = ['volume', 'muted', 'name', 'version'];
 
 // The art types worth showing, best first. Kodi caches posters and thumbs at
-// 720 px (`imageres`) and fanart at 1080 px: the small ones come first.
+// 720 px (`imageres`) and fanart at 1080 px: the small ones come first. An
+// album cover that is not a `folder.jpg`/`cover.jpg` (a `cover.png`, seen on
+// Kodi 21.2) is an "extra art" named after its file: `cover`, `album.cover`.
 const ART_ORDER = {
   video: ['poster', 'thumb', 'tvshow.poster', 'season.poster', 'fanart', 'tvshow.fanart', 'icon'],
-  audio: ['thumb', 'album.thumb', 'artist.thumb', 'fanart', 'artist.fanart', 'icon'],
+  audio: [
+    'thumb',
+    'album.thumb',
+    'cover',
+    'album.cover',
+    'artist.thumb',
+    'fanart',
+    'artist.fanart',
+    'icon',
+  ],
 };
+
+/** Kodi repeat mode -> MUSIC_REPEAT_MODE (OFF 0, ALL 1, ONE 2). */
+export const REPEAT_MODES = { off: 0, all: 1, one: 2 };
 
 const MEDIA_EXTENSION =
   /\.(mkv|mp4|m4v|avi|mov|wmv|mpg|mpeg|ts|m2ts|webm|iso|flv|ogv|mp3|flac|m4a|aac|ogg|opus|wav|wma|ape|alac)$/i;
@@ -145,6 +170,61 @@ export function formatTitle(item) {
   }
 }
 
+const texts = (value) =>
+  (Array.isArray(value) ? value : [value]).map(clean).filter(Boolean).join(', ');
+
+/**
+ * The "now playing" of the Gladys 5.3 music player, split the way its widget
+ * shows it: a song is title / artist / album; an episode is its title / the
+ * show / its season (the number: src/devices.js says "Season 2" in the
+ * user's language); a movie is its title alone; a TV or radio channel is the
+ * programme / the channel. Never empty while something plays.
+ * @returns {{ title: string, artist: string, album: string, season: number|null }}
+ */
+export function describeItem(item) {
+  const empty = { title: '', artist: '', album: '', season: null };
+  if (!item || typeof item !== 'object') {
+    return empty;
+  }
+  const title = clean(item.title);
+  const label = clean(item.label);
+  switch (item.type) {
+    case 'song':
+    case 'musicvideo':
+      return {
+        ...empty,
+        title: title || label,
+        artist: texts(item.artist),
+        album: clean(item.album),
+      };
+    case 'episode':
+      return {
+        ...empty,
+        title: title || label,
+        artist: clean(item.showtitle),
+        season: Number.isInteger(item.season) && item.season >= 0 ? item.season : null,
+      };
+    case 'movie':
+      return { ...empty, title: title || label };
+    case 'channel': {
+      const channel = clean(item.channel) || label;
+      return {
+        ...empty,
+        title: title || channel,
+        artist: title && title !== channel ? channel : '',
+      };
+    }
+    default:
+      // A file or a stream: what Kodi read in its tags, if anything.
+      return {
+        ...empty,
+        title: formatTitle({ ...item, type: 'unknown' }),
+        artist: texts(item.artist),
+        album: clean(item.album),
+      };
+  }
+}
+
 /**
  * What tells one item from the next: the library id (movie, episode, song,
  * channel), else the file. Not the title: a radio stream changes its title
@@ -197,6 +277,11 @@ export function emptySnapshot(state = 'off') {
     live: false,
     volume: null,
     muted: null,
+    music: { title: '', artist: '', album: '', season: null },
+    shuffled: null,
+    repeat: null,
+    playlistId: null,
+    position: null,
   };
 }
 
@@ -230,7 +315,24 @@ export function readSnapshot({ player, properties, item, application }, previous
   snapshot.total = total && total > 0 ? total : null;
   snapshot.percentage = Number.isFinite(props.percentage) ? props.percentage : null;
   snapshot.live = props.live === true;
+  snapshot.music = describeItem(item);
+  Object.assign(snapshot, playerModes(props));
   return snapshot;
+}
+
+/** Shuffle, repeat and the place in the playlist, from Player.GetProperties. */
+export function playerModes(props) {
+  return {
+    shuffled: typeof props?.shuffled === 'boolean' ? props.shuffled : null,
+    repeat:
+      typeof props?.repeat === 'string' && Object.hasOwn(REPEAT_MODES, props.repeat)
+        ? props.repeat
+        : null,
+    playlistId:
+      Number.isInteger(props?.playlistid) && props.playlistid >= 0 ? props.playlistid : null,
+    // -1 when the item was not opened from a playlist.
+    position: Number.isInteger(props?.position) && props.position >= 0 ? props.position : null,
+  };
 }
 
 /** Progress in whole percent, 0 when nothing (or a live stream) plays. */

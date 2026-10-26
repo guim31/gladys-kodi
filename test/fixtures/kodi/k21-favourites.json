@@ -1,0 +1,33 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "favourites": [
+      {
+        "path": "/media/music/Beta Solo/Quiet Room/02 - Whisper.mp3",
+        "thumbnail": "",
+        "title": "Whisper",
+        "type": "media"
+      },
+      {
+        "thumbnail": "",
+        "title": "Quiet Room folder",
+        "type": "window",
+        "window": "music",
+        "windowparameter": "/media/music/Beta Solo/Quiet Room/"
+      },
+      {
+        "thumbnail": "",
+        "title": "Settings",
+        "type": "window",
+        "window": "settings",
+        "windowparameter": ""
+      }
+    ],
+    "limits": {
+      "end": 3,
+      "start": 0,
+      "total": 3
+    }
+  }
+}

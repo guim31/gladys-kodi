@@ -1,0 +1,21 @@
+{
+  "id": 21,
+  "jsonrpc": "2.0",
+  "result": {
+    "item": {
+      "album": "",
+      "art": {
+        "icon": "image://DefaultVideo.png/"
+      },
+      "artist": [],
+      "episode": -1,
+      "file": "/media/video/Bench.Clip.2024.mkv",
+      "label": "Bench.Clip.2024.mkv",
+      "season": -1,
+      "showtitle": "",
+      "title": "",
+      "type": "unknown",
+      "year": 0
+    }
+  }
+}

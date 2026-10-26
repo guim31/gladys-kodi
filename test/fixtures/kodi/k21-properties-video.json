@@ -1,0 +1,25 @@
+{
+  "id": 22,
+  "jsonrpc": "2.0",
+  "result": {
+    "live": false,
+    "percentage": 3.2204322814941406,
+    "playlistid": 1,
+    "position": 0,
+    "repeat": "off",
+    "shuffled": false,
+    "speed": 1,
+    "time": {
+      "hours": 0,
+      "milliseconds": 933,
+      "minutes": 0,
+      "seconds": 1
+    },
+    "totaltime": {
+      "hours": 0,
+      "milliseconds": 23,
+      "minutes": 1,
+      "seconds": 0
+    }
+  }
+}

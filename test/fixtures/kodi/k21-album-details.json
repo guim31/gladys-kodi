@@ -1,0 +1,12 @@
+{
+  "id": 6,
+  "jsonrpc": "2.0",
+  "result": {
+    "albumdetails": {
+      "albumid": 2,
+      "artist": ["Alpha Band"],
+      "label": "Second Wind",
+      "title": "Second Wind"
+    }
+  }
+}

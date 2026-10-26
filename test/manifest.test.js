@@ -88,10 +88,11 @@ test('the manifest version is the package version, and the image is tagged with 
   );
 });
 
-test('scene triggers, scene actions and widgets require Gladys >= 5.1.0', () => {
-  assert.ok(isAtLeast(minGladysVersion(), [5, 1, 0]), manifest.gladys_version);
-  // No widget button opens a form: 5.2.0 is not needed.
-  assert.ok(!isAtLeast(minGladysVersion(), [5, 2, 0]), 'keep 5.1 users');
+test('the music player (manifest `music`) requires Gladys >= 5.3.0', () => {
+  // `music` and the music feature types appeared in Gladys 5.3.0; scene
+  // triggers, scene actions and widgets need 5.1.0, which this covers.
+  assert.ok(isAtLeast(minGladysVersion(), [5, 3, 0]), manifest.gladys_version);
+  assert.deepEqual(manifest.music, { browse: true, search: true, queue: true, append: true });
 });
 
 test('config_schema: three Kodi slots, the defaults and options of the code', () => {
@@ -276,5 +277,5 @@ test('the device features have names, and the created device matches the discove
   const world = await createWorld();
   t.after(() => world.app.stop());
   const device = created(world.gladys);
-  assert.equal(device.features.length, 12);
+  assert.equal(device.features.length, 21);
 });

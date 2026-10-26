@@ -1,0 +1,81 @@
+{
+  "id": 18,
+  "jsonrpc": "2.0",
+  "result": {
+    "items": [
+      {
+        "album": "First Light",
+        "art": {
+          "album.cover": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fFirst%20Light%2fcover.png/",
+          "icon": "image://DefaultAudio.png/"
+        },
+        "artist": ["Alpha Band"],
+        "duration": 40,
+        "file": "/media/music/Alpha Band/First Light/01 - Dawn.mp3",
+        "id": 1,
+        "label": "Dawn",
+        "title": "Dawn",
+        "type": "song"
+      },
+      {
+        "album": "First Light",
+        "art": {
+          "album.cover": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fFirst%20Light%2fcover.png/",
+          "icon": "image://DefaultAudio.png/"
+        },
+        "artist": ["Alpha Band"],
+        "duration": 40,
+        "file": "/media/music/Alpha Band/First Light/02 - Morning Run.mp3",
+        "id": 2,
+        "label": "Morning Run",
+        "title": "Morning Run",
+        "type": "song"
+      },
+      {
+        "album": "First Light",
+        "art": {
+          "album.cover": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fFirst%20Light%2fcover.png/",
+          "icon": "image://DefaultAudio.png/"
+        },
+        "artist": ["Alpha Band"],
+        "duration": 40,
+        "file": "/media/music/Alpha Band/First Light/03 - Noon.mp3",
+        "id": 3,
+        "label": "Noon",
+        "title": "Noon",
+        "type": "song"
+      },
+      {
+        "album": "Quiet Room",
+        "art": {
+          "album.thumb": "image://%2fmedia%2fmusic%2fBeta%20Solo%2fQuiet%20Room%2ffolder.jpg/"
+        },
+        "artist": ["Beta Solo"],
+        "duration": 40,
+        "file": "/media/music/Beta Solo/Quiet Room/01 - Silence.mp3",
+        "id": 6,
+        "label": "Silence",
+        "title": "Silence",
+        "type": "song"
+      },
+      {
+        "album": "Second Wind",
+        "art": {
+          "album.thumb": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fSecond%20Wind%2fcover.jpg/"
+        },
+        "artist": ["Alpha Band"],
+        "duration": 40,
+        "file": "/media/music/Alpha Band/Second Wind/01 - Breathe.mp3",
+        "id": 4,
+        "label": "Breathe",
+        "title": "Breathe",
+        "type": "song"
+      }
+    ],
+    "limits": {
+      "end": 5,
+      "start": 0,
+      "total": 5
+    }
+  }
+}

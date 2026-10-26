@@ -7,10 +7,20 @@
 import { createHash } from 'node:crypto';
 import { createLogger } from '@gladysassistant/integration-sdk';
 import { SLOTS, normalizeConfig } from './config.js';
-import { BUTTONS, buildDevice, buildStates, deviceIds, featureKeyOf, slotOf } from './devices.js';
+import {
+  BUTTONS,
+  buildDevice,
+  buildStates,
+  deviceIds,
+  featureKeyOf,
+  nowPlayingFeatureIds,
+  nowPlayingOf,
+  slotOf,
+} from './devices.js';
 import { addressOf, parseKodiEntries, planSlots, resolveHosts, typedHosts } from './discovery.js';
 import { CommandRefused, KodiInstance } from './instance.js';
 import { KodiError } from './kodi/http.js';
+import { REPEAT_MODES } from './kodi/model.js';
 import {
   DISCOVERY_TEXT,
   MEDIA_LABELS,
@@ -33,8 +43,24 @@ export const TRIGGERS = {
   stopped: 'playback_stopped',
 };
 
-// The core refuses a widget image over 300 KB (decoded).
+// The core refuses a widget image or an artwork over 300 KB (decoded).
 export const MAX_IMAGE_BYTES = 300 * 1024;
+
+// Kodi resizes an art of its texture cache on demand (`?width=` inside the
+// image:// URL, checked on Kodi 21.2: a 1500 px cover served in 300 px, 24 KB
+// instead of 223 KB). The now-playing frame of Gladys is under 400 px, a list
+// thumbnail under 64 px.
+export const ART_WIDTH = { player: 300, list: 64 };
+
+/** The image:// URL of an art at a given width (Kodi's resizing option). */
+export function sizedArt(artUrl, width) {
+  return `${artUrl}${artUrl.includes('?') ? '&' : '?'}width=${width}`;
+}
+
+/** The art URL without the width option sizedArt added. */
+export function unsizedArt(sized) {
+  return sized.replace(/[?&]width=\d+$/, '');
+}
 
 // requestWidgetRefresh is dropped by the core beyond one call per 10 s.
 const WIDGET_REFRESH_GAP_MS = 10_500;
@@ -69,6 +95,9 @@ export function imageType(bytes) {
   return null;
 }
 
+/** The key of an art in the hub's cache: per Kodi. */
+const artCacheKey = (entry, url) => `${entry.slot}|${url}`;
+
 export class Hub {
   constructor({
     gladys,
@@ -93,7 +122,10 @@ export class Hub {
     // slot -> { slot, settings, kodi }
     this.instances = new Map();
     this.saved = { names: {} };
-    // url -> { key, base64 }; key -> url; urls Kodi did not serve
+    // "slot|url" -> { key, base64 }; key -> "slot|url"; what Kodi did not
+    // serve. One cache per Kodi: two Kodi may have the same image:// path for
+    // different files, behind different passwords. The bytes are the 300 px
+    // variant (the original when Kodi does not resize).
     this.artwork = new Map();
     this.artworkFailures = new Set();
     this.artworkKeys = new Map();
@@ -255,10 +287,19 @@ export class Hub {
     if (!this.#isCurrent(entry)) {
       return;
     }
-    await this.#publishStates(entry);
     if (snapshot.art.join('|') !== previous.art.join('|')) {
-      this.#prefetchArtwork(entry, snapshot.art);
+      // Fetched first (in the background): the now-playing artwork waits for
+      // it, and is published again once it is known (or known to be missing).
+      const art = snapshot.art.join('|');
+      entry.artPending = art;
+      this.#prefetchArtwork(entry, snapshot.art).finally(() => {
+        if (entry.artPending === art) {
+          entry.artPending = null;
+          this.#publishStates(entry);
+        }
+      });
     }
+    await this.#publishStates(entry);
     if (
       snapshot.state !== previous.state ||
       snapshot.title !== previous.title ||
@@ -273,9 +314,14 @@ export class Hub {
     if (!this.#isCurrent(entry)) {
       return;
     }
-    const states = buildStates(this.gladys, entry.slot, entry.kodi.snapshot, this.language);
+    const { snapshot } = entry.kodi;
+    const states = buildStates(this.gladys, entry.slot, snapshot, this.language);
+    const nowPlaying = nowPlayingOf(snapshot, this.language, this.#nowPlayingArtwork(entry));
     try {
       await this.gladys.publishChangedStates(states);
+      await this.gladys.publishNowPlaying(deviceIds(this.gladys, entry.slot).device, nowPlaying, {
+        featureExternalIds: nowPlayingFeatureIds(this.gladys, entry.slot),
+      });
       if (this.publishFailing) {
         this.publishFailing = false;
         logger.info('States published again');
@@ -294,7 +340,10 @@ export class Hub {
     }
   }
 
-  /** The user added a device: states sent before were dropped by Gladys. */
+  /**
+   * The user added a device, or updated it (the 1.1 music features of a 1.0
+   * device): states sent to features it did not have were dropped by Gladys.
+   */
   async onDeviceCreated(device) {
     const entry = this.instances.get(slotOf(this.gladys, device?.external_id));
     if (!entry) {
@@ -376,20 +425,26 @@ export class Hub {
    */
   async #prefetchArtwork(entry, urls) {
     for (const url of urls) {
-      if (this.artwork.get(url)?.key) {
+      const cacheKey = artCacheKey(entry, url);
+      if (this.artwork.get(cacheKey)?.key) {
         return;
       }
-      if (this.artworkFailures.has(url)) {
+      if (this.artworkFailures.has(cacheKey)) {
         continue;
       }
       try {
-        const { bytes } = await entry.kodi.artwork([url], MAX_IMAGE_BYTES);
+        // The resized variant first (checked on Kodi 21.2), the cached art as
+        // it is otherwise (a Kodi that would refuse the option).
+        const { bytes } = await entry.kodi.artwork(
+          [sizedArt(url, ART_WIDTH.player), url],
+          MAX_IMAGE_BYTES,
+        );
         if (!imageType(bytes)) {
           throw new Error('not a JPEG, PNG or WebP image');
         }
         const key = `cover-${createHash('sha256').update(bytes).digest('hex').slice(0, 24)}`;
-        this.#rememberArtwork(url, { key, base64: bytes.toString('base64') });
-        this.artworkKeys.set(key, url);
+        this.#rememberArtwork(cacheKey, { key, base64: bytes.toString('base64') });
+        this.artworkKeys.set(key, cacheKey);
         if (this.#isCurrent(entry)) {
           this.refreshWidget();
         }
@@ -400,7 +455,7 @@ export class Hub {
         if (this.artworkFailures.size >= 200) {
           this.artworkFailures.clear();
         }
-        this.artworkFailures.add(url);
+        this.artworkFailures.add(cacheKey);
       }
     }
   }
@@ -410,7 +465,11 @@ export class Hub {
     this.artwork.set(url, value);
     // A few covers are enough: the current item of three Kodi, and recent
     // ones. What a Kodi still plays is never dropped.
-    const playing = new Set([...this.instances.values()].flatMap((e) => e.kodi.snapshot.art));
+    const playing = new Set(
+      [...this.instances.values()].flatMap((e) =>
+        e.kodi.snapshot.art.map((u) => artCacheKey(e, u)),
+      ),
+    );
     for (const [oldest, entry] of this.artwork) {
       if (this.artwork.size <= 12) {
         break;
@@ -425,7 +484,7 @@ export class Hub {
   /** The image key of what an instance plays, once fetched. */
   artworkKey(entry) {
     for (const url of entry.kodi.snapshot.art) {
-      const known = this.artwork.get(url);
+      const known = this.artwork.get(artCacheKey(entry, url));
       if (known?.key) {
         return known.key;
       }
@@ -441,6 +500,54 @@ export class Hub {
       throw new Error(`Unknown image ${key}`);
     }
     return known.base64;
+  }
+
+  /**
+   * The artwork_url of publishNowPlaying: the 300 px variant of the first art
+   * Kodi served, as the URL Gladys keys it by (gladys.artworkKey). Null when
+   * none was served, undefined while the fetch runs.
+   */
+  #nowPlayingArtwork(entry) {
+    const { art } = entry.kodi.snapshot;
+    const served = art.find((url) => this.artwork.get(artCacheKey(entry, url))?.key);
+    if (served) {
+      return this.artworkSource(entry, served, ART_WIDTH.player);
+    }
+    return entry.artPending === art.join('|') && art.length > 0 ? undefined : null;
+  }
+
+  /**
+   * The URL an artwork key stands for: the /image/ address of a sized art on
+   * one Kodi. It is only a key source: the bytes are read by musicArtwork,
+   * with the credentials of that Kodi, never by the SDK's default handler.
+   */
+  artworkSource(entry, artUrl, width) {
+    return `${entry.settings.httpUrl}/image/${encodeURIComponent(sizedArt(artUrl, width))}`;
+  }
+
+  /** onMusicGetArtwork: the raw base64 of an artwork key. */
+  async musicArtwork(key) {
+    const source = this.gladys.artworkUrls?.get(key);
+    if (typeof source !== 'string') {
+      throw new Error(`Unknown artwork ${key}`);
+    }
+    const entry = [...this.instances.values()].find((candidate) =>
+      source.startsWith(`${candidate.settings.httpUrl}/image/`),
+    );
+    if (!entry) {
+      throw new Error(`Artwork ${key}: this Kodi is not configured anymore`);
+    }
+    const sized = decodeURIComponent(source.slice(`${entry.settings.httpUrl}/image/`.length));
+    // The current cover is already in memory (fetched for the widget too).
+    const known = this.artwork.get(artCacheKey(entry, unsizedArt(sized)));
+    if (known?.base64 && sized === sizedArt(unsizedArt(sized), ART_WIDTH.player)) {
+      return known.base64;
+    }
+    const { bytes } = await entry.kodi.artwork([sized, unsizedArt(sized)], MAX_IMAGE_BYTES);
+    if (!imageType(bytes)) {
+      throw new Error(`Artwork ${key}: not a JPEG, PNG or WebP image`);
+    }
+    return bytes.toString('base64');
   }
 
   // --- Connection status --------------------------------------------------
@@ -549,23 +656,69 @@ export class Hub {
     return Math.round(number);
   }
 
-  /** onSetValue: the volume slider and the remote-control keys. */
+  /**
+   * onSetValue: the transport keys, the volume, and the Gladys 5.3 music
+   * player (playback state, seek, shuffle, repeat, mute).
+   */
   async setValue(device, feature, value) {
     const key = featureKeyOf(feature?.external_id);
-    if (key === 'volume') {
-      const volume = this.checkVolume(value);
-      await this.run(device.external_id, (kodi) => kodi.setVolume(volume));
-      return;
+    const id = device.external_id;
+    switch (key) {
+      case 'volume': {
+        const volume = this.checkVolume(value);
+        await this.run(id, (kodi) => kodi.setVolume(volume));
+        return;
+      }
+      case 'mute':
+        // Until "Update" in Discover, the 1.0 television push button: a toggle.
+        if (feature.category !== 'music') {
+          await this.run(id, (kodi) => kodi.setMute('toggle'));
+          return;
+        }
+        await this.run(id, (kodi) => kodi.setMute(this.#binary(value)));
+        return;
+      case 'playback_state': {
+        const state = Number(value);
+        if (![0, 1, 2].includes(state)) {
+          throw new CommandError('bad_value', this.language);
+        }
+        await this.run(id, (kodi) => kodi.setPlaybackState(state));
+        return;
+      }
+      case 'position': {
+        const seconds = Number(value);
+        if (!Number.isFinite(seconds) || seconds < 0) {
+          throw new CommandError('bad_value', this.language);
+        }
+        await this.run(id, (kodi) => kodi.seek(seconds));
+        return;
+      }
+      case 'shuffle':
+        await this.run(id, (kodi) => kodi.setShuffle(this.#binary(value)));
+        return;
+      case 'repeat': {
+        const mode = Object.keys(REPEAT_MODES).find((name) => REPEAT_MODES[name] === Number(value));
+        if (!mode) {
+          throw new CommandError('bad_value', this.language);
+        }
+        await this.run(id, (kodi) => kodi.setRepeat(mode));
+        return;
+      }
+      default:
+        if (Object.hasOwn(BUTTONS, key)) {
+          await this.run(id, (kodi) => kodi.playback(key));
+          return;
+        }
+        throw new Error(`Feature ${key} cannot be controlled`);
     }
-    if (key === 'mute') {
-      await this.run(device.external_id, (kodi) => kodi.setMute('toggle'));
-      return;
+  }
+
+  #binary(value) {
+    const number = Number(value);
+    if (number !== 0 && number !== 1) {
+      throw new CommandError('bad_value', this.language);
     }
-    if (key in BUTTONS) {
-      await this.run(device.external_id, (kodi) => kodi.playback(key));
-      return;
-    }
-    throw new Error(`Feature ${key} cannot be controlled`);
+    return number === 1;
   }
 
   /** onPoll (the devices are not polled; this only serves a Gladys that would). */

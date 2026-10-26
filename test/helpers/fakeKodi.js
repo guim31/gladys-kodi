@@ -16,6 +16,74 @@ export function fixture(name) {
   return JSON.parse(readFileSync(new URL(`../fixtures/kodi/${name}`, import.meta.url), 'utf8'));
 }
 
+/**
+ * The music library of the bench Kodi 21.2 (k21-*.json): three albums of two
+ * artists, the songs of "First Light", the "Evening" playlist, a source, three
+ * favourites (a song, a folder, a settings window).
+ */
+export function k21Library() {
+  const songs = structuredClone(result('k21-songs-of-album.json').songs).map((song) => ({
+    ...song,
+    albumid: 1,
+    title: song.label,
+    type: 'song',
+    id: song.songid,
+  }));
+  const cafe = structuredClone(result('k21-search-songs.json').songs[0]);
+  songs.push({ ...cafe, albumid: 2, title: cafe.label, type: 'song', id: cafe.songid });
+  return {
+    artists: structuredClone(result('k21-artists.json').artists),
+    albums: structuredClone(result('k21-albums.json').albums),
+    songs,
+    playlists: structuredClone(result('k21-playlists-dir.json').files),
+    // The two songs of Evening.m3u, as Files.GetDirectory lists them.
+    playlistItems: {
+      'special://profile/playlists/music/Evening.m3u': [
+        {
+          file: '/media/music/Beta Solo/Quiet Room/01 - Silence.mp3',
+          label: 'Silence',
+          title: 'Silence',
+          type: 'song',
+          id: 6,
+          filetype: 'file',
+          artist: ['Beta Solo'],
+          duration: 40,
+        },
+        {
+          file: '/media/music/Alpha Band/Second Wind/01 - Breathe.mp3',
+          label: 'Breathe',
+          title: 'Breathe',
+          type: 'song',
+          id: 4,
+          filetype: 'file',
+          artist: ['Alpha Band'],
+          duration: 40,
+        },
+      ],
+    },
+    sources: structuredClone(result('k21-sources.json').sources),
+    sourceDir: structuredClone(result('k21-source-dir.json').files),
+    favourites: structuredClone(result('k21-favourites.json').favourites),
+  };
+}
+
+const page = (rows, limits) => {
+  const start = limits?.start ?? 0;
+  const end = limits?.end ?? rows.length;
+  const items = rows.slice(start, end);
+  return { items, limits: { start, end: start + items.length, total: rows.length } };
+};
+
+const ruleMatches = (rule, row, fields) => {
+  if (rule.and) {
+    return rule.and.every((part) => ruleMatches(part, row, fields));
+  }
+  const value = fields[rule.field]?.(row);
+  const values = (Array.isArray(value) ? value : [value]).map((v) => String(v ?? '').toLowerCase());
+  const wanted = String(rule.value).toLowerCase();
+  return rule.operator === 'is' ? values.includes(wanted) : values.some((v) => v.includes(wanted));
+};
+
 export const COVER = readFileSync(new URL('../fixtures/kodi/cover.jpg', import.meta.url));
 export const HA_ITEMS = fixture('items-home-assistant.json');
 
@@ -132,7 +200,54 @@ export class FakeKodi {
     this.calls = [];
     this.notifications = [];
     this.images = new Map();
+    this.imageRequests = [];
     this.player = null; // { player, properties, item }
+    this.library = k21Library();
+    this.playlists = { 0: [], 1: [] };
+  }
+
+  /** Start item `position` of a playlist, as Player.Open / GoTo do. */
+  playFromPlaylist(playlistid, position) {
+    const item = this.playlists[playlistid][position];
+    const type = playlistid === 1 ? 'video' : 'audio';
+    this.player = {
+      player: { playerid: playlistid === 1 ? 1 : 0, playertype: 'internal', type },
+      properties: {
+        ...structuredClone(result('k21-properties-audio.json')),
+        time: { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 },
+        percentage: 0,
+        playlistid,
+        position,
+        shuffled: this.player?.properties.shuffled ?? false,
+        repeat: this.player?.properties.repeat ?? 'off',
+      },
+      item: structuredClone(item),
+    };
+    const data = { item: { id: item.id, type: item.type }, player: { playerid: 0, speed: 1 } };
+    this.notify('Player.OnPlay', data);
+  }
+
+  /** The songs of a Playlist.Item, as Kodi adds them. */
+  itemsOf(item) {
+    const { songs } = this.library;
+    if (item.albumid !== undefined) {
+      return songs.filter((song) => song.albumid === item.albumid);
+    }
+    if (item.artistid !== undefined) {
+      const artist = this.library.artists.find((a) => a.artistid === item.artistid);
+      return songs.filter((song) => song.artist.includes(artist?.artist));
+    }
+    if (item.songid !== undefined) {
+      return songs.filter((song) => song.songid === item.songid);
+    }
+    if (item.directory !== undefined) {
+      return this.library.playlistItems[item.directory] ?? [];
+    }
+    if (item.file !== undefined) {
+      const song = songs.find((s) => s.file === item.file);
+      return [song ?? { file: item.file, label: item.file.split('/').at(-1), type: 'unknown' }];
+    }
+    return [];
   }
 
   get httpUrl() {
@@ -272,7 +387,17 @@ export class FakeKodi {
         this.stop(false);
         return ok('OK');
       case 'Player.GoTo':
-        return playerMatches() ? ok('OK') : invalid;
+        if (!playerMatches()) {
+          return invalid;
+        }
+        if (Number.isInteger(params.to)) {
+          const playlistid = current.properties.playlistid ?? 0;
+          if (!this.playlists[playlistid]?.[params.to]) {
+            return invalid;
+          }
+          this.playFromPlaylist(playlistid, params.to);
+        }
+        return ok('OK');
       case 'Application.SetVolume':
         if (!Number.isInteger(params.volume)) {
           return invalid;
@@ -294,6 +419,13 @@ export class FakeKodi {
         this.notifications.push(params);
         return ok('OK');
       case 'Player.Open':
+        if (Number.isInteger(params?.item?.playlistid)) {
+          if (!this.playlists[params.item.playlistid]?.[params.item.position ?? 0]) {
+            return invalid;
+          }
+          this.playFromPlaylist(params.item.playlistid, params.item.position ?? 0);
+          return ok('OK');
+        }
         if (typeof params?.item?.file !== 'string') {
           return invalid;
         }
@@ -301,6 +433,112 @@ export class FakeKodi {
         return ok('OK');
       case 'VideoLibrary.Scan':
       case 'AudioLibrary.Scan':
+        return ok('OK');
+      // --- The music catalog (Gladys 5.3), on the k21 library -------------
+      case 'AudioLibrary.GetArtists': {
+        const rows = this.library.artists.filter(
+          (row) => !params.filter || ruleMatches(params.filter, row, { artist: (r) => r.artist }),
+        );
+        const { items, limits } = page(rows, params.limits);
+        return ok({ artists: items, limits });
+      }
+      case 'AudioLibrary.GetAlbums': {
+        const fields = { album: (r) => r.label, artist: (r) => r.artist };
+        const artist = this.library.artists.find((a) => a.artistid === params.filter?.artistid);
+        const rows = this.library.albums.filter((row) => {
+          if (params.filter?.artistid !== undefined) {
+            return row.artist.includes(artist?.artist);
+          }
+          return !params.filter || ruleMatches(params.filter, row, fields);
+        });
+        const { items, limits } = page(rows, params.limits);
+        return ok({ albums: items, limits });
+      }
+      case 'AudioLibrary.GetSongs': {
+        const rows = this.library.songs.filter((row) => {
+          if (params.filter?.albumid !== undefined) {
+            return row.albumid === params.filter.albumid;
+          }
+          return !params.filter || ruleMatches(params.filter, row, { title: (r) => r.title });
+        });
+        const { items, limits } = page(rows, params.limits);
+        return ok({ songs: items, limits });
+      }
+      case 'AudioLibrary.GetAlbumDetails': {
+        const album = this.library.albums.find((a) => a.albumid === params.albumid);
+        return album ? ok({ albumdetails: { ...album, title: album.label } }) : invalid;
+      }
+      case 'AudioLibrary.GetArtistDetails': {
+        const artist = this.library.artists.find((a) => a.artistid === params.artistid);
+        return artist ? ok({ artistdetails: artist }) : invalid;
+      }
+      case 'Files.GetSources':
+        return ok({ sources: this.library.sources, limits: { start: 0, end: 1, total: 1 } });
+      case 'Files.GetDirectory': {
+        const rows =
+          params.directory === 'special://musicplaylists/'
+            ? this.library.playlists
+            : params.directory === '/media/music/'
+              ? this.library.sourceDir
+              : this.library.playlistItems[params.directory];
+        if (!rows) {
+          return invalid;
+        }
+        const { items, limits } = page(rows, params.limits);
+        return ok({ files: items, limits });
+      }
+      case 'Favourites.GetFavourites':
+        return ok({
+          favourites: this.library.favourites,
+          limits: { start: 0, end: 3, total: 3 },
+        });
+      case 'Playlist.Clear':
+        this.playlists[params.playlistid] = [];
+        return ok('OK');
+      case 'Playlist.Add':
+        this.playlists[params.playlistid].push(...structuredClone(this.itemsOf(params.item)));
+        return ok('OK');
+      case 'Playlist.Insert':
+        this.playlists[params.playlistid].splice(
+          params.position,
+          0,
+          ...structuredClone(this.itemsOf(params.item)),
+        );
+        return ok('OK');
+      case 'Playlist.GetItems': {
+        const { items, limits } = page(this.playlists[params.playlistid] ?? [], params.limits);
+        return ok({ items, limits });
+      }
+      case 'Player.Seek': {
+        if (!playerMatches() || !params.value?.time) {
+          return invalid;
+        }
+        current.properties.time = { ...params.value.time };
+        this.notify('Player.OnSeek', {
+          item: {},
+          player: { playerid: current.player.playerid, speed: 1, time: params.value.time },
+        });
+        return ok({ time: params.value.time });
+      }
+      case 'Player.SetShuffle':
+        if (!playerMatches()) {
+          return invalid;
+        }
+        current.properties.shuffled = params.shuffle;
+        this.notify('Player.OnPropertyChanged', {
+          player: { playerid: current.player.playerid },
+          property: { shuffled: params.shuffle },
+        });
+        return ok('OK');
+      case 'Player.SetRepeat':
+        if (!playerMatches()) {
+          return invalid;
+        }
+        current.properties.repeat = params.repeat;
+        this.notify('Player.OnPropertyChanged', {
+          player: { playerid: current.player.playerid },
+          property: { repeat: params.repeat },
+        });
         return ok('OK');
       default:
         return { error: { code: -32601, message: 'Method not found.' } };
@@ -324,7 +562,15 @@ export class FakeKodi {
       return json(200, { id: request.id, jsonrpc: '2.0', ...answer });
     }
     if (pathname.startsWith('/image/')) {
-      const art = decodeURIComponent(pathname.slice('/image/'.length));
+      const sized = decodeURIComponent(pathname.slice('/image/'.length));
+      // Kodi resizes an art of its cache on `?width=` (checked on Kodi 21.2);
+      // the fake serves the same bytes and records the width asked.
+      const width = /\?width=(\d+)$/.exec(sized)?.[1];
+      const art = sized.replace(/\?width=\d+$/, '');
+      this.imageRequests.push({ art, width: width ? Number(width) : null });
+      if (width && this.resizes === false) {
+        return new Response('<html>File not found</html>', { status: 404 });
+      }
       const bytes = this.images.get(art);
       if (!bytes) {
         return new Response('<html>File not found</html>', { status: 404 });

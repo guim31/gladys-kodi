@@ -17,6 +17,15 @@ notifications, its web server for the rest. No cloud, no account.
 
 ## Features
 
+- **Gladys 5.3 music player** (1.1): each Kodi is a player of the dashboard
+  **Music** box — artwork (resized by Kodi), title, artist, album (an episode
+  shows its show and season), a seekable progress bar, play / pause / stop,
+  previous / next, shuffle, repeat, volume and mute — and of its panel: browse
+  the music library (artists, albums, playlists, favourites, files), search it,
+  play right now, next or at the end, and see or jump in Kodi's playlist. The
+  same picker feeds the Gladys scene action "Play music on a speaker". Kodi
+  added before 1.1: click **Update** in Discover to get the new features (same
+  ids for the existing buttons, volume and mute).
 - **One device per Kodi** (up to three): playback state, what is playing
   (`Movie (2024)`, `Show S01E02 – Title`, `Artist – Song`), media type,
   progress, time left, a volume slider, and play / pause / stop / previous /
@@ -40,7 +49,7 @@ notifications, its web server for the rest. No cloud, no account.
 
 ## Requirements
 
-- Gladys Assistant 5.1 or later.
+- Gladys Assistant 5.3 or later (1.0.x for Gladys 5.1 and 5.2).
 - Kodi 19 or later, with **Settings → Services → Control → Allow remote control
   via HTTP** and **Allow remote control from applications on other systems**
   turned on.
