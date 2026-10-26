@@ -1,0 +1,19 @@
+{
+  "id": 7,
+  "jsonrpc": "2.0",
+  "result": {
+    "files": [
+      {
+        "file": "special://profile/playlists/music/Evening.m3u",
+        "filetype": "directory",
+        "label": "Evening.m3u",
+        "type": "unknown"
+      }
+    ],
+    "limits": {
+      "end": 1,
+      "start": 0,
+      "total": 1
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "id": 15,
+  "jsonrpc": "2.0",
+  "result": [
+    {
+      "playerid": 0,
+      "playertype": "internal",
+      "type": "audio"
+    }
+  ]
+}

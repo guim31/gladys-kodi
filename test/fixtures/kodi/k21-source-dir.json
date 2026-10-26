@@ -1,0 +1,37 @@
+{
+  "id": 8,
+  "jsonrpc": "2.0",
+  "result": {
+    "files": [
+      {
+        "art": {},
+        "file": "/media/music/Beta Solo/",
+        "filetype": "directory",
+        "label": "Beta Solo",
+        "title": "",
+        "type": "unknown"
+      },
+      {
+        "art": {},
+        "file": "/media/music/Evening.m3u",
+        "filetype": "directory",
+        "label": "Evening.m3u",
+        "title": "",
+        "type": "unknown"
+      },
+      {
+        "art": {},
+        "file": "/media/music/Alpha Band/",
+        "filetype": "directory",
+        "label": "Alpha Band",
+        "title": "",
+        "type": "unknown"
+      }
+    ],
+    "limits": {
+      "end": 3,
+      "start": 0,
+      "total": 3
+    }
+  }
+}

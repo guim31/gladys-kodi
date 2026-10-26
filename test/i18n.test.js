@@ -10,6 +10,7 @@ import { readFile } from 'node:fs/promises';
 import { LANGUAGES } from '../src/config.js';
 import { MEDIA_TYPES, STATES } from '../src/kodi/model.js';
 import {
+  CATALOG_TEXT,
   COMMAND_ERRORS,
   DISCOVERY_TEXT,
   DONE_TEXT,
@@ -18,6 +19,7 @@ import {
   MEDIA_LABELS,
   NAMES,
   NOTHING_PLAYING,
+  SEASON,
   STATE_LABELS,
   STATUS_TEXT,
   TEST_TEXT,
@@ -186,6 +188,12 @@ test('every message table of the code has the four languages', () => {
     ...tableProblems(TEST_TEXT, 'TEST_TEXT', MAX.message, render),
     ...tableProblems(DISCOVERY_TEXT, 'DISCOVERY_TEXT', MAX.message, render),
     ...tableProblems(DURATION, 'DURATION', MAX.short, (v) => v(12, '05')),
+    ...tableProblems(CATALOG_TEXT, 'CATALOG_TEXT', MAX.status),
+    ...problems(
+      Object.fromEntries(Object.entries(SEASON).map(([lang, season]) => [lang, season(2)])),
+      'SEASON',
+      MAX.status,
+    ),
     ...Object.entries(DONE_TEXT).flatMap(([key, value]) =>
       problems(value, `DONE_TEXT.${key}`, MAX.message),
     ),

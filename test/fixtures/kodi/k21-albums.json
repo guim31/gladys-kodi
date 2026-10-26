@@ -1,0 +1,40 @@
+{
+  "id": 2,
+  "jsonrpc": "2.0",
+  "result": {
+    "albums": [
+      {
+        "albumid": 1,
+        "art": {
+          "cover": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fFirst%20Light%2fcover.png/"
+        },
+        "artist": ["Alpha Band"],
+        "label": "First Light",
+        "year": 2024
+      },
+      {
+        "albumid": 3,
+        "art": {
+          "thumb": "image://%2fmedia%2fmusic%2fBeta%20Solo%2fQuiet%20Room%2ffolder.jpg/"
+        },
+        "artist": ["Beta Solo"],
+        "label": "Quiet Room",
+        "year": 2024
+      },
+      {
+        "albumid": 2,
+        "art": {
+          "thumb": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fSecond%20Wind%2fcover.jpg/"
+        },
+        "artist": ["Alpha Band"],
+        "label": "Second Wind",
+        "year": 2024
+      }
+    ],
+    "limits": {
+      "end": 3,
+      "start": 0,
+      "total": 3
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": 5,
+  "jsonrpc": "2.0",
+  "result": {
+    "limits": {
+      "end": 1,
+      "start": 0,
+      "total": 1
+    },
+    "songs": [
+      {
+        "album": "Second Wind",
+        "art": {
+          "album.thumb": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fSecond%20Wind%2fcover.jpg/"
+        },
+        "artist": ["Alpha Band"],
+        "duration": 40,
+        "file": "/media/music/Alpha Band/Second Wind/02 - Café Crème.mp3",
+        "label": "Café Crème",
+        "songid": 5
+      }
+    ]
+  }
+}

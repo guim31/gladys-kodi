@@ -1,0 +1,21 @@
+{
+  "id": 16,
+  "jsonrpc": "2.0",
+  "result": {
+    "item": {
+      "album": "First Light",
+      "art": {
+        "album.cover": "image://%2fmedia%2fmusic%2fAlpha%20Band%2fFirst%20Light%2fcover.png/",
+        "icon": "image://DefaultAudio.png/"
+      },
+      "artist": ["Alpha Band"],
+      "duration": 40,
+      "file": "/media/music/Alpha Band/First Light/02 - Morning Run.mp3",
+      "id": 2,
+      "label": "Morning Run",
+      "title": "Morning Run",
+      "type": "song",
+      "year": 2024
+    }
+  }
+}

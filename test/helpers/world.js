@@ -18,6 +18,7 @@ export const FAST_TIMINGS = {
   offlineInterval: 40,
   notificationDelay: 5,
   stopGrace: 40,
+  commandSettle: 5,
 };
 export const FAST_SOCKET = {
   callTimeout: 300,

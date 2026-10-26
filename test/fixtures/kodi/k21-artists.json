@@ -1,0 +1,27 @@
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "artists": [
+      {
+        "art": {},
+        "artist": "Alpha Band",
+        "artistid": 2,
+        "label": "Alpha Band",
+        "thumbnail": ""
+      },
+      {
+        "art": {},
+        "artist": "Beta Solo",
+        "artistid": 3,
+        "label": "Beta Solo",
+        "thumbnail": ""
+      }
+    ],
+    "limits": {
+      "end": 2,
+      "start": 0,
+      "total": 2
+    }
+  }
+}

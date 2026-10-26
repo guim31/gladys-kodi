@@ -20,6 +20,15 @@ export const NAMES = {
     stop: 'Stop',
     previous: 'Previous',
     next: 'Next',
+    playback_state: 'Playback state',
+    music_title: 'Title',
+    artist: 'Artist',
+    album: 'Album',
+    artwork: 'Artwork',
+    duration: 'Duration',
+    position: 'Position',
+    shuffle: 'Shuffle',
+    repeat: 'Repeat',
   },
   fr: {
     state: 'Lecture',
@@ -34,6 +43,15 @@ export const NAMES = {
     stop: 'Stop',
     previous: 'Précédent',
     next: 'Suivant',
+    playback_state: 'État de lecture',
+    music_title: 'Titre',
+    artist: 'Artiste',
+    album: 'Album',
+    artwork: 'Pochette',
+    duration: 'Durée',
+    position: 'Position',
+    shuffle: 'Aléatoire',
+    repeat: 'Répétition',
   },
   de: {
     state: 'Wiedergabe',
@@ -48,6 +66,15 @@ export const NAMES = {
     stop: 'Stopp',
     previous: 'Zurück',
     next: 'Weiter',
+    playback_state: 'Wiedergabestatus',
+    music_title: 'Titel',
+    artist: 'Interpret',
+    album: 'Album',
+    artwork: 'Cover',
+    duration: 'Dauer',
+    position: 'Position',
+    shuffle: 'Zufallswiedergabe',
+    repeat: 'Wiederholen',
   },
   es: {
     state: 'Reproducción',
@@ -62,6 +89,15 @@ export const NAMES = {
     stop: 'Detener',
     previous: 'Anterior',
     next: 'Siguiente',
+    playback_state: 'Estado de reproducción',
+    music_title: 'Título',
+    artist: 'Artista',
+    album: 'Álbum',
+    artwork: 'Carátula',
+    duration: 'Duración',
+    position: 'Posición',
+    shuffle: 'Aleatorio',
+    repeat: 'Repetir',
   },
 };
 
@@ -241,6 +277,50 @@ export const DISCOVERY_TEXT = {
   },
 };
 
+/** "Season 2": the album line of an episode in the music player. */
+export const SEASON = {
+  en: (number) => (number === 0 ? 'Specials' : `Season ${number}`),
+  fr: (number) => (number === 0 ? 'Épisodes spéciaux' : `Saison ${number}`),
+  de: (number) => (number === 0 ? 'Specials' : `Staffel ${number}`),
+  es: (number) => (number === 0 ? 'Especiales' : `Temporada ${number}`),
+};
+
+/** The root folders of the music catalog (Gladys 5.3 panel). */
+export const CATALOG_TEXT = {
+  en: {
+    artists: 'Artists',
+    albums: 'Albums',
+    playlists: 'Playlists',
+    favourites: 'Favourites',
+    files: 'Files',
+    unknown: 'Unknown item',
+  },
+  fr: {
+    artists: 'Artistes',
+    albums: 'Albums',
+    playlists: 'Listes de lecture',
+    favourites: 'Favoris',
+    files: 'Fichiers',
+    unknown: 'Élément inconnu',
+  },
+  de: {
+    artists: 'Interpreten',
+    albums: 'Alben',
+    playlists: 'Wiedergabelisten',
+    favourites: 'Favoriten',
+    files: 'Dateien',
+    unknown: 'Unbekannter Eintrag',
+  },
+  es: {
+    artists: 'Artistas',
+    albums: 'Álbumes',
+    playlists: 'Listas de reproducción',
+    favourites: 'Favoritos',
+    files: 'Archivos',
+    unknown: 'Elemento desconocido',
+  },
+};
+
 /** Errors of a command (device buttons, widget, scene actions). */
 export const COMMAND_ERRORS = {
   en: {
@@ -252,6 +332,12 @@ export const COMMAND_ERRORS = {
     out_of_range: 'The volume goes from 0 to 100.',
     empty_message: 'The notification has no text.',
     empty_target: 'Give the path or the URL of the media to play.',
+    empty_queue: 'The Kodi playlist is empty: choose something to play.',
+    not_found: 'This media is no longer in the Kodi library.',
+    not_playable: 'This item cannot be played: open it to choose what to play.',
+    not_in_queue: 'This item is no longer in the Kodi playlist.',
+    bad_value: 'This value is not accepted.',
+    nothing_added: 'Kodi added nothing to its playlist.',
   },
   fr: {
     unknown_device: "Ce Kodi n'est plus configuré dans l'intégration.",
@@ -262,6 +348,12 @@ export const COMMAND_ERRORS = {
     out_of_range: 'Le volume va de 0 à 100.',
     empty_message: "La notification n'a pas de texte.",
     empty_target: "Indiquez le chemin ou l'URL du média à lire.",
+    empty_queue: 'La liste de lecture de Kodi est vide : choisissez quoi lire.',
+    not_found: "Ce média n'est plus dans la bibliothèque de Kodi.",
+    not_playable: 'Cet élément ne se lit pas : ouvrez-le pour choisir quoi lire.',
+    not_in_queue: "Cet élément n'est plus dans la liste de lecture de Kodi.",
+    bad_value: "Cette valeur n'est pas acceptée.",
+    nothing_added: "Kodi n'a rien ajouté à sa liste de lecture.",
   },
   de: {
     unknown_device: 'Dieses Kodi ist in der Integration nicht mehr eingerichtet.',
@@ -272,6 +364,12 @@ export const COMMAND_ERRORS = {
     out_of_range: 'Die Lautstärke geht von 0 bis 100.',
     empty_message: 'Die Benachrichtigung hat keinen Text.',
     empty_target: 'Gib den Pfad oder die URL des Mediums an.',
+    empty_queue: 'Die Wiedergabeliste von Kodi ist leer: wähle etwas zum Abspielen.',
+    not_found: 'Dieses Medium ist nicht mehr in der Kodi-Bibliothek.',
+    not_playable: 'Dieser Eintrag lässt sich nicht abspielen: öffne ihn, um etwas auszuwählen.',
+    not_in_queue: 'Dieser Eintrag ist nicht mehr in der Wiedergabeliste von Kodi.',
+    bad_value: 'Dieser Wert wird nicht akzeptiert.',
+    nothing_added: 'Kodi hat nichts zur Wiedergabeliste hinzugefügt.',
   },
   es: {
     unknown_device: 'Este Kodi ya no está configurado en la integración.',
@@ -282,6 +380,12 @@ export const COMMAND_ERRORS = {
     out_of_range: 'El volumen va de 0 a 100.',
     empty_message: 'La notificación no tiene texto.',
     empty_target: 'Indique la ruta o la URL del medio que desea reproducir.',
+    empty_queue: 'La lista de reproducción de Kodi está vacía: elija qué reproducir.',
+    not_found: 'Este medio ya no está en la biblioteca de Kodi.',
+    not_playable: 'Este elemento no se puede reproducir: ábralo para elegir qué reproducir.',
+    not_in_queue: 'Este elemento ya no está en la lista de reproducción de Kodi.',
+    bad_value: 'Este valor no se acepta.',
+    nothing_added: 'Kodi no añadió nada a su lista de reproducción.',
   },
 };
 

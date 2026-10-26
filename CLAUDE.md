@@ -33,7 +33,8 @@ pushing.
 ```
 index.js                          SDK wiring only: src/app.js registers the handlers before connect()
 src/app.js                        every SDK handler -> the hub (also used by the tests)
-src/hub.js                        instances, devices, states, connection status, scene events, artwork, search
+src/hub.js                        instances, devices, states (publishNowPlaying too), connection status, scene events, artwork, search
+src/catalog.js                    Gladys 5.3 music panel: browse, search, play, queue (MediaItems, our ids)
 src/instance.js                   one Kodi: WebSocket + HTTP fallback, reads, transitions, commands
 src/devices.js                    Kodi -> Gladys device, snapshot -> feature states
 src/discovery.js                  mDNS answers (scanNetwork) -> Kodi found -> free config slots
@@ -268,13 +269,40 @@ planter Kodi, un audio reste bloqué sans notification). L'image `:Piers` (Kodi 
   réel : des sources déjà configurées).
 - **Temps restant** : les durées de Kodi ont des millisecondes (10:00.042) : arrondir au-dessus
   après avoir retiré une demi-seconde, sinon « 11 min » au début d'un film de 10 min.
-- **Pièges Gladys rencontrés** : la catégorie `music` (play, pause, next…) a une boîte « Musique »
-  au tableau de bord, mais ses types n'ont **aucun composant de ligne** dans la boîte « Appareils
-  d'une pièce » (affichés comme des nombres) ; la catégorie `television` est rendue en boutons de
-  télécommande (icône seule, `PushDeviceFeature`) et `television/volume` en curseur. Choix :
-  `television/*`. Ces boutons, seuls de leur type, s'affichent sous le **nom de l'appareil** (règle
-  du front, comme pour toute télé). Aucun `music/playback_state` (affiché « 0 »/« 1 ») : l'état est
-  un `text/text` et l'action de scène `get_status` sert les conditions.
+- **Pièges Gladys rencontrés (1.0)** : avant Gladys 5.3, les types `music` n'avaient **aucun
+  composant de ligne** dans la boîte « Appareils d'une pièce » ; la 1.0 publiait donc
+  `television/*` (boutons de télécommande, `television/volume` en curseur) et l'état en `text/text`.
+- **Lecteur Musique de Gladys 5.3 (1.1)** : mêmes clés, converties en `music/*` par « Mettre à
+  jour » (play, pause, previous, next, volume, mute ; stop reste `television`, la catégorie `music`
+  n'a pas d'arrêt) ; nouvelles : `playback_state`, `music_title` (le texte `title` 1.0 garde sa
+  forme « Artiste – Titre » / « Rien en lecture », d'où `featureExternalIds.title`), `artist`,
+  `album`, `artwork`, `duration`, `position`, `shuffle`, `repeat`. Tant que l'appareil n'est pas
+  mis à jour, la sourdine reçoit 1 d'un bouton poussoir : `feature.category` lu dans `onSetValue`
+  (bascule). `onDeviceUpdated` republie tout. Tout `music` passe par `publishNowPlaying`, les textes
+  et capteurs 1.0 par `publishChangedStates`.
+- Faits vérifiés sur **Kodi 21.2** (paquet Debian trixie, Xvfb + PulseAudio `null`, lecture réelle
+  audio et vidéo ; banc `scratch-kodi`, 65 vérifications en WebSocket et en HTTP seul) :
+  - `/image/<image://…/?width=300>` : Kodi **redimensionne** à la demande (1500 px → 300 px, 24 Ko
+    au lieu de 223 Ko) et garde la variante dans son cache de miniatures. Non vérifié sur Kodi 20.
+  - Une pochette `cover.png` (pas dans la liste `folder.jpg`/`cover.jpg`) devient l'art `cover` /
+    `album.cover` (et `album.thumb` reste absent) : à chercher aussi.
+  - `Player.Seek` `{ value: { seconds } }` est **relatif** ; absolu : `{ value: { time: {…} } }`.
+  - Une liste `.m3u` : `Files.GetDirectory` la liste, `Playlist.Add { directory }` la développe ;
+    `{ file }` ajoute un élément illisible, `Player.Open { file }` n'ouvre rien d'utilisable.
+  - La liste 0 suit l'ordre mélangé (« à la suite » = position + 1 dans les deux modes) ; après un
+    arrêt, Kodi garde la liste mais plus de lecteur (`Player.Open { playlistid, position }`).
+  - `OnPropertyChanged` porte `shuffled` / `repeat` ; `OnSeek` la nouvelle position.
+  - Filtre `contains` : insensible à la casse, **pas aux accents**. Un `albumid` inconnu :
+    « Invalid params » (GetAlbumDetails comme Player.Open) → ids `album:<id>:<artiste>:<titre>`
+    retrouvés par le nom après une reconstruction de la bibliothèque.
+  - Favoris : `type: media` + `path`, ou `window` + `windowparameter` (dossier), ou une fenêtre
+    (ligne neutre).
+  - En HTTP seul, une lecture **juste après** `GoTo`/`Open`/`Stop` voit l'état d'avant (pas de
+    lecteur entre deux morceaux, ou l'ancien) : `afterCommand` attend 0,7 s puis relit encore.
+  - Banc : après un `docker restart`, Xvfb refuse de démarrer (`/tmp/.X99-lock`) ; après de
+    nombreuses transitions, le rendu vidéo peut échouer (« failed to configure renderer ») : un
+    artefact du banc, pas de l'intégration. `Settings.SetSettingValue services.esallinterfaces`
+    ferme bien le port 9090 au réseau, mais la remise à `true` n'a pas répondu.
 - Déclencheurs : ils reflètent ce que Kodi fait vraiment, quelle qu'en soit l'origine
   (`play_media` est suivi de `playback_started`) ; rien pour ce qui jouait au démarrage de
   l'intégration, ni à l'extinction de Kodi, ni à son retour avec le même média

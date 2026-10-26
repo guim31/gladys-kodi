@@ -21,3 +21,11 @@ on the web server:
 a TV channel and a song from the Kodi tests of Home Assistant
 (`tests/components/kodi/fixtures`, Apache License 2.0), with `art` and `year`
 added in the shape Kodi uses.
+
+`k21-*.json`: answers recorded on a real Kodi 21.2 (Debian trixie package, X11
+on Xvfb, PulseAudio null sink) in Docker, with a generated library (two
+artists, three albums of 40 s songs, one with a `cover.png`, an `Evening.m3u`
+playlist, three favourites) and a generated video outside the library: the
+music catalog (artists, albums, songs, playlists, sources, favourites, a
+search), a song playing from the playlist (item, properties with shuffle,
+repeat and position, the queue) and the video file.

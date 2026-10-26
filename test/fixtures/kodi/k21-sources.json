@@ -1,0 +1,17 @@
+{
+  "id": 9,
+  "jsonrpc": "2.0",
+  "result": {
+    "limits": {
+      "end": 1,
+      "start": 0,
+      "total": 1
+    },
+    "sources": [
+      {
+        "file": "/media/music/",
+        "label": "Music"
+      }
+    ]
+  }
+}
