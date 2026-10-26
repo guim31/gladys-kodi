@@ -298,7 +298,7 @@ planter Kodi, un audio reste bloqué sans notification). L'image `:Piers` (Kodi 
   - Favoris : `type: media` + `path`, ou `window` + `windowparameter` (dossier), ou une fenêtre
     (ligne neutre).
   - En HTTP seul, une lecture **juste après** `GoTo`/`Open`/`Stop` voit l'état d'avant (pas de
-    lecteur entre deux morceaux, ou l'ancien) : `afterCommand` attend 0,7 s puis relit encore.
+    lecteur entre deux morceaux, ou l'ancien) : `afterCommand` relit à 0,7 s puis 2,1 s, sans retarder l'acquittement (relecture : un `await` dépassait les 5 s du set-value sur un Kodi lent).
   - Banc : après un `docker restart`, Xvfb refuse de démarrer (`/tmp/.X99-lock`) ; après de
     nombreuses transitions, le rendu vidéo peut échouer (« failed to configure renderer ») : un
     artefact du banc, pas de l'intégration. `Settings.SetSettingValue services.esallinterfaces`

@@ -101,6 +101,14 @@ export function parseId(id) {
   }
 }
 
+/** A refused call (unknown id) reads as null; Kodi away stays an error. */
+function onlyRpc(err) {
+  if (err?.kind === 'rpc') {
+    return null;
+  }
+  throw err;
+}
+
 /** An id with its names when they fit, without them otherwise. */
 function namedId(kind, libraryId, ...parts) {
   const full = [`${kind}:${libraryId}`, ...parts.map((part) => encodeURIComponent(part))].join(':');
@@ -109,6 +117,9 @@ function namedId(kind, libraryId, ...parts) {
 
 /** The file id of a path, or the library id when the path is too long. */
 function fileId(path, songid) {
+  if (!path) {
+    return Number.isInteger(songid) ? `song:${songid}` : null;
+  }
   const id = `file:${path}`;
   if (id.length <= MAX_ID) {
     return id;
@@ -172,7 +183,13 @@ export class Catalog {
     }
     const artist = names(album.artist);
     const item = {
-      id: namedId('album', album.albumid, artist, title),
+      // The first artist alone: the one the album is found again by.
+      id: namedId(
+        'album',
+        album.albumid,
+        clean((Array.isArray(album.artist) ? album.artist : [album.artist])[0]),
+        title,
+      ),
       type: MUSIC_MEDIA_TYPES.ALBUM,
       title,
       browsable: true,
@@ -409,7 +426,7 @@ export class Catalog {
   async #resolveArtist(kodi, { libraryId, name }) {
     const details = await kodi
       .call('AudioLibrary.GetArtistDetails', { artistid: libraryId, properties: [] })
-      .catch(() => null);
+      .catch(onlyRpc);
     const label = clean(details?.artistdetails?.label ?? details?.artistdetails?.artist);
     if (details?.artistdetails && (!name || fold(label) === fold(name))) {
       return libraryId;
@@ -431,7 +448,7 @@ export class Catalog {
   async #resolveAlbum(kodi, { libraryId, artist, title }) {
     const details = await kodi
       .call('AudioLibrary.GetAlbumDetails', { albumid: libraryId, properties: ['title', 'artist'] })
-      .catch(() => null);
+      .catch(onlyRpc);
     const album = details?.albumdetails;
     if (album && (!title || fold(album.title || album.label) === fold(title))) {
       return libraryId;
@@ -439,7 +456,7 @@ export class Catalog {
     if (title) {
       const rules = [{ field: 'album', operator: 'is', value: title }];
       if (artist) {
-        rules.push({ field: 'artist', operator: 'is', value: artist.split(', ')[0] });
+        rules.push({ field: 'artist', operator: 'is', value: artist });
       }
       const found = await kodi.call('AudioLibrary.GetAlbums', {
         filter: rules.length > 1 ? { and: rules } : rules[0],
@@ -539,8 +556,9 @@ export class Catalog {
   }
 
   /**
-   * onMusicPlay (and the `music.play-media` scene action). Replace: the
-   * music playlist is emptied, filled, checked and started at its start.
+   * onMusicPlay (and the `music.play-media` scene action). Replace: a file
+   * is opened by Kodi as it is; anything else empties the music playlist,
+   * fills it, checks it and starts it at its start.
    * Next: inserted after the item playing in the music playlist (at its end
    * when something else plays). Append: added at its end. Nothing starts on
    * next / append.
@@ -561,6 +579,28 @@ export class Catalog {
           })
         )?.limits?.total ?? 0;
       if (mode === MUSIC_PLAY_MODES.REPLACE) {
+        if (parsed.kind === 'file') {
+          // One file (a favourite may be a video or a stream): Kodi picks the
+          // player and the playlist itself; the music queue is never emptied
+          // for a file Kodi would not add to it.
+          await kodi.call('Player.Open', { item: { file: parsed.path } });
+          await kodi.afterCommand();
+          return;
+        }
+        if (parsed.kind === 'playlist') {
+          // Checked before the music queue is emptied: an unreadable playlist
+          // file would leave the user with nothing.
+          const listed = await kodi
+            .call('Files.GetDirectory', {
+              directory: parsed.path,
+              media: 'music',
+              limits: { start: 0, end: 1 },
+            })
+            .catch(onlyRpc);
+          if (!(listed?.limits?.total > 0)) {
+            throw new CommandError('nothing_added', this.language);
+          }
+        }
         await kodi.call('Playlist.Clear', { playlistid: AUDIO_PLAYLIST });
         await kodi.call('Playlist.Add', { playlistid: AUDIO_PLAYLIST, item });
         if ((await size()) === 0) {

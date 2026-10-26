@@ -57,6 +57,11 @@ export function sizedArt(artUrl, width) {
   return `${artUrl}${artUrl.includes('?') ? '&' : '?'}width=${width}`;
 }
 
+/** The art URL without the width option sizedArt added. */
+export function unsizedArt(sized) {
+  return sized.replace(/[?&]width=\d+$/, '');
+}
+
 // requestWidgetRefresh is dropped by the core beyond one call per 10 s.
 const WIDGET_REFRESH_GAP_MS = 10_500;
 
@@ -90,6 +95,9 @@ export function imageType(bytes) {
   return null;
 }
 
+/** The key of an art in the hub's cache: per Kodi. */
+const artCacheKey = (entry, url) => `${entry.slot}|${url}`;
+
 export class Hub {
   constructor({
     gladys,
@@ -114,8 +122,10 @@ export class Hub {
     // slot -> { slot, settings, kodi }
     this.instances = new Map();
     this.saved = { names: {} };
-    // url -> { key, base64 }; key -> url; urls Kodi did not serve. The url is
-    // the image:// art of the item; the bytes are its 300 px variant.
+    // "slot|url" -> { key, base64 }; key -> "slot|url"; what Kodi did not
+    // serve. One cache per Kodi: two Kodi may have the same image:// path for
+    // different files, behind different passwords. The bytes are the 300 px
+    // variant (the original when Kodi does not resize).
     this.artwork = new Map();
     this.artworkFailures = new Set();
     this.artworkKeys = new Map();
@@ -415,23 +425,26 @@ export class Hub {
    */
   async #prefetchArtwork(entry, urls) {
     for (const url of urls) {
-      if (this.artwork.get(url)?.key) {
+      const cacheKey = artCacheKey(entry, url);
+      if (this.artwork.get(cacheKey)?.key) {
         return;
       }
-      if (this.artworkFailures.has(url)) {
+      if (this.artworkFailures.has(cacheKey)) {
         continue;
       }
       try {
+        // The resized variant first (checked on Kodi 21.2), the cached art as
+        // it is otherwise (a Kodi that would refuse the option).
         const { bytes } = await entry.kodi.artwork(
-          [sizedArt(url, ART_WIDTH.player)],
+          [sizedArt(url, ART_WIDTH.player), url],
           MAX_IMAGE_BYTES,
         );
         if (!imageType(bytes)) {
           throw new Error('not a JPEG, PNG or WebP image');
         }
         const key = `cover-${createHash('sha256').update(bytes).digest('hex').slice(0, 24)}`;
-        this.#rememberArtwork(url, { key, base64: bytes.toString('base64') });
-        this.artworkKeys.set(key, url);
+        this.#rememberArtwork(cacheKey, { key, base64: bytes.toString('base64') });
+        this.artworkKeys.set(key, cacheKey);
         if (this.#isCurrent(entry)) {
           this.refreshWidget();
         }
@@ -442,7 +455,7 @@ export class Hub {
         if (this.artworkFailures.size >= 200) {
           this.artworkFailures.clear();
         }
-        this.artworkFailures.add(url);
+        this.artworkFailures.add(cacheKey);
       }
     }
   }
@@ -452,7 +465,11 @@ export class Hub {
     this.artwork.set(url, value);
     // A few covers are enough: the current item of three Kodi, and recent
     // ones. What a Kodi still plays is never dropped.
-    const playing = new Set([...this.instances.values()].flatMap((e) => e.kodi.snapshot.art));
+    const playing = new Set(
+      [...this.instances.values()].flatMap((e) =>
+        e.kodi.snapshot.art.map((u) => artCacheKey(e, u)),
+      ),
+    );
     for (const [oldest, entry] of this.artwork) {
       if (this.artwork.size <= 12) {
         break;
@@ -467,7 +484,7 @@ export class Hub {
   /** The image key of what an instance plays, once fetched. */
   artworkKey(entry) {
     for (const url of entry.kodi.snapshot.art) {
-      const known = this.artwork.get(url);
+      const known = this.artwork.get(artCacheKey(entry, url));
       if (known?.key) {
         return known.key;
       }
@@ -492,7 +509,7 @@ export class Hub {
    */
   #nowPlayingArtwork(entry) {
     const { art } = entry.kodi.snapshot;
-    const served = art.find((url) => this.artwork.get(url)?.key);
+    const served = art.find((url) => this.artwork.get(artCacheKey(entry, url))?.key);
     if (served) {
       return this.artworkSource(entry, served, ART_WIDTH.player);
     }
@@ -522,12 +539,11 @@ export class Hub {
     }
     const sized = decodeURIComponent(source.slice(`${entry.settings.httpUrl}/image/`.length));
     // The current cover is already in memory (fetched for the widget too).
-    for (const [url, known] of this.artwork) {
-      if (known.base64 && sizedArt(url, ART_WIDTH.player) === sized) {
-        return known.base64;
-      }
+    const known = this.artwork.get(artCacheKey(entry, unsizedArt(sized)));
+    if (known?.base64 && sized === sizedArt(unsizedArt(sized), ART_WIDTH.player)) {
+      return known.base64;
     }
-    const { bytes } = await entry.kodi.artwork([sized], MAX_IMAGE_BYTES);
+    const { bytes } = await entry.kodi.artwork([sized, unsizedArt(sized)], MAX_IMAGE_BYTES);
     if (!imageType(bytes)) {
       throw new Error(`Artwork ${key}: not a JPEG, PNG or WebP image`);
     }

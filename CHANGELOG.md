@@ -29,8 +29,7 @@ the notes of the version's GitHub Release.
 - Kodi devices added with 1.0: click **Update** in the Discover tab to get the
   new features. Play, Pause, Previous, Next, the volume and mute become
   features of the music category under the same identifiers (scenes and
-  dashboards keep working); mute becomes an on/off switch (until the update it
-  keeps toggling). The "Now playing" text feature stays as it was, next to the
+  dashboards keep working); mute becomes an on/off switch (until the update it keeps toggling; after it, a scene that "pressed" Mute with 1 mutes instead of toggling). The "Now playing" text feature stays as it was, next to the
   new "Title" used by the Music box.
 - The dashboard widget asks Kodi for a 300 px artwork: a cover Kodi cached
   above 300 KB is now shown.
@@ -39,9 +38,7 @@ the notes of the version's GitHub Release.
 
 - Album covers stored as `cover.png` (an "extra art" for Kodi) were ignored:
   the widget and the player now show them.
-- Over HTTP (port 9090 closed), the state is read 0.7 s after a command
-  instead of at once: Kodi opens, skips and stops asynchronously, and the
-  immediate read could briefly show nothing playing between two songs.
+- Over HTTP (port 9090 closed), the state is read 0.7 s and 2.1 s after a command instead of at once, without delaying the command: Kodi opens, skips and stops asynchronously, and the immediate read could briefly show nothing playing between two songs.
 
 ## [1.0.2] - 2026-10-22
 

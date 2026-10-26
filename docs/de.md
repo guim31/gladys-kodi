@@ -69,7 +69,7 @@ Pause, zurück / weiter, Zufallswiedergabe, Wiederholen, die Lautstärke und Stu
 **Kodi vor Version 1.1 hinzugefügt**: Öffne den Tab **Entdecken** und klicke beim Kodi-Gerät auf
 **Aktualisieren**, um die neuen Funktionen zu erhalten. Die Tasten Abspielen, Pause, Zurück,
 Weiter, die Lautstärke und Stumm behalten ihre Kennung: Deine Szenen und Dashboards funktionieren
-weiter. Bis zu dieser Aktualisierung bleibt Stumm eine Taste, die umschaltet.
+weiter. Bis zu dieser Aktualisierung bleibt Stumm eine Taste, die umschaltet; danach wird es gesetzt (1 schaltet stumm, 0 wieder an): Eine Szene, die Stumm „drückte“, schaltet jetzt stumm statt umzuschalten.
 
 ## Das Kodi-Gerät
 

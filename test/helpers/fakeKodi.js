@@ -568,6 +568,9 @@ export class FakeKodi {
       const width = /\?width=(\d+)$/.exec(sized)?.[1];
       const art = sized.replace(/\?width=\d+$/, '');
       this.imageRequests.push({ art, width: width ? Number(width) : null });
+      if (width && this.resizes === false) {
+        return new Response('<html>File not found</html>', { status: 404 });
+      }
       const bytes = this.images.get(art);
       if (!bytes) {
         return new Response('<html>File not found</html>', { status: 404 });

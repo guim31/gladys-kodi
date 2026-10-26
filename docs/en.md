@@ -65,8 +65,7 @@ repeat, the volume and mute.
 
 **Kodi added before version 1.1**: open the **Discover** tab and click **Update** on the Kodi
 device to get the new features. The Play, Pause, Previous, Next buttons, the volume and mute keep
-their identifier: your scenes and dashboards keep working. Until that update, mute stays a button
-that toggles.
+their identifier: your scenes and dashboards keep working. Until that update, mute stays a button that toggles; then it is set (1 mutes, 0 unmutes): a scene that "pressed" Mute now mutes instead of toggling.
 
 ## The Kodi device
 

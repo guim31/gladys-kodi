@@ -68,7 +68,7 @@ reproducir / pausa, anterior / siguiente, aleatorio, repetir, el volumen y el si
 **Kodi añadido antes de la versión 1.1**: abra la pestaña **Descubrir** y pulse **Actualizar** en
 el dispositivo Kodi para recibir las nuevas funciones. Los botones Reproducir, Pausa, Anterior,
 Siguiente, el volumen y el silencio conservan su identificador: sus escenas y paneles siguen
-funcionando. Hasta esa actualización, el silencio sigue siendo un botón que alterna.
+funcionando. Hasta esa actualización, el silencio sigue siendo un botón que alterna; después se ajusta (1 silencia, 0 activa el sonido): una escena que «pulsaba» Silencio ahora silencia en lugar de alternar.
 
 ## El dispositivo Kodi
 

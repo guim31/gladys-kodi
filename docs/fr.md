@@ -71,7 +71,7 @@ sourdine.
 **Kodi ajouté avant la version 1.1** : ouvrez l'onglet **Découverte** et cliquez sur **Mettre à
 jour** sur l'appareil Kodi pour recevoir les nouvelles fonctionnalités. Les boutons Lire, Pause,
 Précédent, Suivant, le volume et la sourdine gardent leur identifiant : vos scènes et tableaux de
-bord continuent de fonctionner. Jusqu'à cette mise à jour, la sourdine reste un bouton qui bascule.
+bord continuent de fonctionner. Jusqu'à cette mise à jour, la sourdine reste un bouton qui bascule ; ensuite elle se règle (1 coupe le son, 0 le rétablit) : une scène qui « appuyait » sur Sourdine coupe désormais le son au lieu de basculer.
 
 ## L'appareil Kodi
 

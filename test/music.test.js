@@ -437,6 +437,13 @@ test('play: replace, next after the current song, append; refusals', async (t) =
   const nothing = await play('playlist:/nowhere.m3u', 'playlist', 'replace');
   assert.equal(nothing.success, false);
   assert.match(nothing.error, /rien ajouté/);
+  assert.deepEqual(titles(), ['Dawn', 'Morning Run', 'Noon', 'Café Crème'], 'queue kept');
+  // A file (a favourite may be a video): opened by Kodi as it is, queue kept.
+  assert.equal((await play('file:/media/video/Clip.mkv', 'track', 'replace')).success, true);
+  assert.deepEqual(kodi.calls.filter((c) => c.method === 'Player.Open').at(-1).params, {
+    item: { file: '/media/video/Clip.mkv' },
+  });
+  assert.deepEqual(titles(), ['Dawn', 'Morning Run', 'Noon', 'Café Crème']);
 });
 
 test('queue: a page around the current item, jump, and the kept playlist once stopped', async (t) => {
@@ -497,5 +504,41 @@ test('a device of another integration is refused by every music handler', async 
   assert.equal(
     (await w.gladys.fake.musicPlay(stranger, { id: 'file:/a.mp3', type: 'track' })).success,
     false,
+  );
+});
+
+test('artworks: one cache per Kodi, and the original when Kodi does not resize', async (t) => {
+  const first = new FakeKodi({ host: '192.0.2.20' });
+  const second = new FakeKodi({ host: '192.0.2.21', name: 'Kodi Two' });
+  second.resizes = false;
+  const other = Buffer.from(COVER);
+  other[other.length - 3] ^= 0xff; // same path on the second Kodi, other bytes
+  first.images.set(COVER_ART, COVER);
+  second.images.set(COVER_ART, other);
+  const w = await createWorld({ kodis: [first, second] });
+  t.after(() => w.app.stop());
+  await until(() => w.hub.instances.get(2)?.kodi.known, 2000, 'second Kodi');
+  for (const slot of [1, 2]) {
+    await w.gladys.fake.deviceCreated(created(w.gladys, slot));
+  }
+  for (const kodi of [first, second]) {
+    kodi.playlists[0] = structuredClone(kodi.library.songs.slice(0, 1));
+    kodi.playFromPlaylist(0, 0);
+  }
+  const artwork = (slot) => w.gladys.fake.lastState(featureId('artwork', slot));
+  await until(
+    () => /^art-/.test(artwork(1) ?? '') && /^art-/.test(artwork(2) ?? ''),
+    2000,
+    'covers',
+  );
+  assert.notEqual(artwork(1), artwork(2), 'a key per Kodi');
+  const bytes = async (slot) =>
+    Buffer.from((await w.gladys.fake.musicGetArtwork(artwork(slot))).data.image, 'base64');
+  assert.ok((await bytes(1)).equals(COVER));
+  assert.ok((await bytes(2)).equals(other), 'the second Kodi served its own, unresized');
+  assert.deepEqual(
+    second.imageRequests.map((r) => r.width),
+    [300, null],
+    'the 300 px variant, then the cached art as it is',
   );
 });

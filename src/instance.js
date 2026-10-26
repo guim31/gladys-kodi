@@ -502,13 +502,15 @@ export class KodiInstance extends EventEmitter {
    * once more a little later (a long transition). Over the WebSocket the
    * notifications do it.
    */
-  async afterCommand() {
+  afterCommand() {
     if (this.socket.live || !this.running) {
       return;
     }
-    await new Promise((resolve) => setTimeout(resolve, this.timings.commandSettle));
-    await this.refresh();
-    this.requestRefresh(this.timings.commandSettle * 3);
+    // Not awaited: the command is acknowledged at once (Gladys waits 5 s for
+    // a set-value), the reads follow.
+    this.requestRefresh(this.timings.commandSettle);
+    const later = setTimeout(() => this.requestRefresh(0), this.timings.commandSettle * 3);
+    later.unref?.();
   }
 
   /**
